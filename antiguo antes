@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Monitor ONTs - OLT Huawei</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #22c55e;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-bg: #1e293b;
+            --light-bg: #f8fafc;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--light-bg);
+            color: #334155;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            z-index: 1000;
+            overflow-y: auto;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            color: white;
+        }
+
+        .sidebar-header h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-header .subtitle {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 1rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: var(--secondary-color);
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background-color: #f1f5f9;
+            color: var(--primary-color);
+            transform: translateX(4px);
+        }
+
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .nav-link i {
+            width: 20px;
+            margin-right: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .nav-section {
+            margin-top: 2rem;
+            padding: 0 1rem;
+        }
+
+        .nav-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--secondary-color);
+            margin-bottom: 0.5rem;
+            padding: 0 1rem;
+            letter-spacing: 0.05em;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.full-width {
+            margin-left: 0;
+        }
+
+        .topbar {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between; /* ✅ corregido */
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-toggle {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: #f1f5f9;
+            color: var(--primary-color);
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: var(--secondary-color);
+            font-size: 0.875rem;
+        }
+
+        .content-wrapper {
+            padding: 2rem;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .stats-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-label {
+            color: var(--secondary-color);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .quick-actions {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            margin: 0.25rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            color: white;
+        }
+
+        .action-btn i {
+            margin-right: 0.5rem;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            transition: border-color 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #3b82f6);
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .results-table {
+            background: white;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            background-color: #f8fafc;
+            border-bottom: 2px solid var(--border-color);
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .status-warning {
+            background-color: #fef9c3;
+            color: #92400e;
+        }
+
+        .status-critical {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-online {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-offline {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-overlay.show {
+                display: block;
+            }
+
+            .content-wrapper {
+                padding: 1rem;
+            }
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Overlay -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1 class="h4"><i class="fas fa-network-wired"></i> OLT Monitor</h1>
+            <div class="subtitle">Huawei MA5800-X15</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-item">
+                <a href="#" class="nav-link active" data-page="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" data-page="individual">
+                    <i class="fas fa-list"></i>
+                    Monitor ONTs
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" data-page="ports">
+                    <i class="fas fa-th-large"></i>
+                    Monitor Puertos
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Herramientas</div>
+                <div class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-chart-line"></i>
+                        Reportes
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-file-export"></i>
+                        Exportar Datos
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-history"></i>
+                        Historial
+                    </a>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Configuración</div>
+                <div class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-cog"></i>
+                        Ajustes
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-bell"></i>
+                        Alertas
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#" class="nav-link">
+                        <i class="fas fa-user"></i>
+                        Usuario
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Top Bar -->
+        <div class="topbar">
+            <div class="d-flex align-items-center">
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="ms-3">
+                    <div class="page-title">Dashboard</div>
+                    <div class="page-subtitle">Monitoreo en tiempo real del sistema</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-success me-2">Online</span>
+                <i class="fas fa-circle text-success"></i>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div class="content-wrapper">
+            <!-- Dashboard Page -->
+            <div id="dashboard-page" class="page-content">
+                <!-- Quick Stats -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stats-card text-center">
+                            <div class="stats-number text-primary">1,293</div>
+                            <div class="stats-label">ONTs Totales</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center">
+                            <div class="stats-number text-success">1,156</div>
+                            <div class="stats-label">ONTs Online</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center">
+                            <div class="stats-number text-danger">137</div>
+                            <div class="stats-label">ONTs Offline</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card text-center">
+                            <div class="stats-number text-warning">23</div>
+                            <div class="stats-label">Alertas</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="quick-actions">
+                            <h5 class="mb-3">Acciones Rápidas</h5>
+                            <a href="#" class="action-btn" onclick="showPage('individual')">
+                                <i class="fas fa-search"></i>
+                                Consultar ONTs
+                            </a>
+                            <a href="#" class="action-btn" onclick="showPage('ports')">
+                                <i class="fas fa-th-large"></i>
+                                Monitor Puertos
+                            </a>
+                            <a href="#" class="action-btn">
+                                <i class="fas fa-download"></i>
+                                Exportar Reporte
+                            </a>
+                            <a href="#" class="action-btn">
+                                <i class="fas fa-sync-alt"></i>
+                                Actualizar Todo
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card">
+                            <h5 class="mb-3">Estado del Sistema</h5>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>CPU Usage</span>
+                                <span class="text-success">23%</span>
+                            </div>
+                            <div class="progress mb-3">
+                                <div class="progress-bar bg-success" style="width: 23%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Memory</span>
+                                <span class="text-warning">67%</span>
+                            </div>
+                            <div class="progress mb-3">
+                                <div class="progress-bar bg-warning" style="width: 67%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Uptime</span>
+                                <span class="text-info">15d 6h</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monitor ONTs Individual Page -->
+            <div id="individual-page" class="page-content" style="display: none;">
+                <div class="form-card mb-4">
+                    <h5 class="mb-3"><i class="fas fa-search"></i> Consultar ONTs</h5>
+                    <form id="consultaForm" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="tarjeta" class="form-label">
+                                <i class="fas fa-microchip"></i> Tarjeta
+                            </label>
+                            <input type="number" class="form-control" id="tarjeta" name="tarjeta" 
+                                placeholder="Ej: 4" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="puerto" class="form-label">
+                                <i class="fas fa-plug"></i> Puerto
+                            </label>
+                            <input type="number" class="form-control" id="puerto" name="puerto" 
+                                placeholder="Ej: 0" required>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search"></i> Consultar ONTs
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Results Table -->
+                <div class="results-table" id="resultsTable" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Descripción</th>
+                                    <th>ONT RX</th>
+                                    <th>OLT RX</th>
+                                    <th>Diferencia</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsBody">
+                                <!-- Datos dinámicos -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monitor Puertos Page -->
+            <div id="ports-page" class="page-content" style="display: none;">
+                <div class="form-card mb-4">
+                    <h5 class="mb-3"><i class="fas fa-th-large"></i> Monitor de Puertos PON</h5>
+                    <div class="row align-items-end">
+                        <div class="col-md-6">
+                            <label for="tarjetaInput" class="form-label">
+                                <i class="fas fa-microchip"></i> Tarjeta
+                            </label>
+                            <input type="text" class="form-control" id="tarjetaInput" 
+                                   placeholder="2" value="2">
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-primary w-100" onclick="actualizarDatos()" id="updateBtn">
+                                <i class="fas fa-sync-alt"></i> Actualizar Datos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="puertosContainer" class="row g-3">
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No hay datos para mostrar</h4>
+                        <p class="text-muted">Seleccione una tarjeta y haga clic en "Actualizar Datos"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <h4 class="mt-3 text-primary">Consultando dispositivo...</h4>
+        <p class="text-muted">Por favor espere, esto puede tomar unos momentos</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sidebar functionality
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mobileOverlay = document.getElementById('mobileOverlay');
+
+        sidebarToggle.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('show');
+                mobileOverlay.classList.toggle('show');
+            } else {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('full-width');
+            }
+        });
+
+        mobileOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('show');
+            mobileOverlay.classList.remove('show');
+        });
+
+        // Navigation functionality
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.style.display = 'none';
+            });
+            
+            // Show selected page
+            document.getElementById(pageId + '-page').style.display = 'block';
+            
+            // Update navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
+            
+            // Update page title
+            const pageTitle = document.querySelector('.page-title');
+            const pageSubtitle = document.querySelector('.page-subtitle');
+            
+            switch(pageId) {
+                case 'dashboard':
+                    pageTitle.textContent = 'Dashboard';
+                    pageSubtitle.textContent = 'Monitoreo en tiempo real del sistema';
+                    break;
+                case 'individual':
+                    pageTitle.textContent = 'Monitor ONTs';
+                    pageSubtitle.textContent = 'Consulta individual de ONTs por tarjeta y puerto';
+                    break;
+                case 'ports':
+                    pageTitle.textContent = 'Monitor Puertos';
+                    pageSubtitle.textContent = 'Vista general del estado de puertos PON';
+                    break;
+            }
+        }
+
+        // Navigation event listeners
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const pageId = link.getAttribute('data-page');
+                if (pageId) {
+                    showPage(pageId);
+                }
+                
+                // Close mobile sidebar
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.remove('show');
+                    mobileOverlay.classList.remove('show');
+                }
+            });
+        });
+
+        // Form submission for ONTs
+        document.getElementById('consultaForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const tarjeta = document.getElementById('tarjeta').value.trim();
+            const puerto = document.getElementById('puerto').value.trim();
+            
+            if (!tarjeta || !puerto) {
+                alert('Por favor complete todos los campos');
+                return;
+            }
+            
+            showLoading();
+            
+            // Simulate API call
+            setTimeout(() => {
+                hideLoading();
+                showResults(tarjeta, puerto);
+            }, 2000);
+        });
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('show');
+        }
+
+        function showResults(tarjeta, puerto) {
+            const resultsTable = document.getElementById('resultsTable');
+            const resultsBody = document.getElementById('resultsBody');
+            
+            // Sample data
+            const sampleData = [
+                { id: 1, descripcion: 'ONT-001', ontRx: '-18.2', oltRx: '-15.5', diff: '2.7', estado: 'online' },
+                { id: 2, descripcion: 'ONT-002', ontRx: '-20.1', oltRx: '-17.8', diff: '2.3', estado: 'online' },
+                { id: 3, descripcion: 'ONT-003', ontRx: '-', oltRx: '-', diff: '-', estado: 'offline' },
+                { id: 4, descripcion: 'ONT-004', ontRx: '-19.5', oltRx: '-16.2', diff: '3.3', estado: 'online' }
+            ];
+            
+            resultsBody.innerHTML = sampleData.map(ont => `
+                <tr>
+                    <td>${ont.id}</td>
+                    <td>${ont.descripcion}</td>
+                    <td>${ont.ontRx}</td>
+                    <td>${ont.oltRx}</td>
+                    <td>${ont.diff}</td>
+                    <td>
+                        <span class="status-badge status-${ont.estado}">
+                            ${ont.estado === 'online' ? 'Online' : 'Offline'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+            
+            resultsTable.style.display = 'block';
+        }
+
+        // Port monitoring function
+        function actualizarDatos() {
+            const tarjeta = document.getElementById('tarjetaInput').value.trim();
+            const updateBtn = document.getElementById('updateBtn');
+            
+            if (!tarjeta) {
+                alert('Por favor ingrese una tarjeta válida');
+                return;
+            }   
+            
+            updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...';
+            updateBtn.disabled = true;
+            
+            // Simulate API call
+            setTimeout(() => {
+                updateBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar Datos';
+                updateBtn.disabled = false;
+                
+                // Show sample port data
+                const puertosContainer = document.getElementById('puertosContainer');
+                puertosContainer.innerHTML = Array.from({length: 16}, (_, i) => {
+                    const status = Math.random() > 0.7 ? 'critical' : Math.random() > 0.3 ? 'online' : 'warning';
+                    const percentage = status === 'online' ? Math.floor(Math.random() * 30) + 70 : 
+                                     status === 'warning' ? Math.floor(Math.random() * 40) + 30 : 
+                                     Math.floor(Math.random() * 30);
+                    
+                    return `
+                        <div class="col-lg-3 col-md-4 col-sm-6">
+                            <div class="stats-card text-center">
+                                <h5 class="mb-2">Puerto ${i}</h5>
+                                <div class="stats-number text-${status === 'online' ? 'success' : status === 'warning' ? 'warning' : 'danger'}">${percentage}%</div>
+                                <div class="stats-label">Activo</div>
+                                <span class="status-badge status-${status} mt-2">
+                                    ${status.charAt(0).toUpperCase() + status.slice(1)}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }, 1500);
+        }
+
+        // Responsive handling
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('show');
+                mobileOverlay.classList.remove('show');
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            showPage('dashboard');
+        });
+    </script>
+</body>
+</html>

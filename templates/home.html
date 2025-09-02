@@ -1,0 +1,176 @@
+{% extends "index.html" %}
+
+{% block status %}active{% endblock %}
+{% block title %}Home - OLT Monitor{% endblock %}
+{% block page_title %}Bienvenido{% endblock %}
+{% block page_subtitle %}Pantalla de inicio{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    <!-- Mensajes flash mejorados -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 11000;">
+        {% for category, message in messages %}
+        <div class="toast show" role="alert">
+            <div class="toast-header">
+                <i
+                    class="fas {% if category == 'error' %}fa-exclamation-triangle text-danger{% elif category == 'success' %}fa-check-circle text-success{% elif category == 'warning' %}fa-exclamation-circle text-warning{% else %}fa-info-circle text-info{% endif %} me-2"></i>
+                <strong class="me-auto">{{ category.title() }}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">{{ message }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Header profesional -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between p-4 bg-gradient rounded shadow-sm border-start border-primary border-4">
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                        <i class="fas fa-network-wired fa-2x text-primary"></i>
+                    </div>
+                    <div>
+                        <h2 class="mb-1 fw-bold">Panel de Administración OLT</h2>
+                        <p class="text-muted mb-0">Sistema de monitoreo y gestión de terminales ópticas</p>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <div class="d-flex align-items-center text-muted">
+                        <i class="fas fa-clock me-2"></i>
+                        <span id="currentTime"></span>
+                    </div>
+                    <small class="text-success">
+                        <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>
+                        Sistema activo
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ONUs detectadas (autofind) -->
+    <div class="mt-5 p-4 bg-light bg-opacity-10 rounded shadow">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4><i class="fas fa-search text-primary"></i> ONUs detectadas</h4>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshAutofind()">
+                <i class="fas fa-sync-alt"></i> Actualizar
+            </button>
+        </div>
+        
+        <div class="results-table">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0" id="autofindTable">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Número</th>
+                            <th>Tipo</th>
+                            <th>Board</th>
+                            <th>Port</th>
+                            <th>SN</th>
+                            <th>Type</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for onu in autofind_list %}
+                        <tr>
+                            <td>{{ onu.number }}</td>
+                            <td>
+                                <span class="badge bg-info">{{ onu.pon_type }}</span>
+                            </td>
+                            <td>{{ onu.board }}</td>
+                            <td>{{ onu.port }}</td>
+                            <td>{{ onu.sn }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ onu.type }}</span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('ont.authorize_ont', sn=onu.sn) }}" 
+                                   class="btn btn-sm btn-outline-success"
+                                   title="Autorizar ONT {{ onu.sn }}">
+                                    <i class="fas fa-check"></i> Autorizar
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="fas fa-search fa-2x mb-2"></i>
+                                <br>No hay ONUs detectadas en este momento
+                                <br>
+                                <small>Las ONUs aparecerán aquí cuando se conecten sin autorizar</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información adicional -->
+    <div class="mt-5 p-4 bg-light bg-opacity-10 rounded shadow">
+        <h4><i class="fas fa-info-circle text-primary"></i> Información del sistema</h4>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-server text-secondary me-2"></i> Modelo OLT: Huawei MA5800-X15</li>
+                    <li><i class="fas fa-code-branch text-secondary me-2"></i> Versión del sistema: 1.0.0</li>
+                    <li><i class="fas fa-clock text-secondary me-2"></i> Última actualización: {{ moment().format('LLL') if moment else "Hoy" }}</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-network-wired text-secondary me-2"></i> ONUs en autofind: <span class="badge bg-info">{{ autofind_list|length }}</span></li>
+                    <li><i class="fas fa-eye text-secondary me-2"></i> Estado: <span class="badge bg-success">Monitoreando</span></li>
+                    <li><i class="fas fa-wifi text-secondary me-2"></i> Conexión: <span class="badge bg-success">Activa</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- JavaScript para funcionalidad adicional -->
+<script>
+    function refreshAutofind() {
+        const button = document.querySelector('button[onclick="refreshAutofind()"]');
+        const icon = button.querySelector('i');
+        
+        // Cambiar icono y deshabilitar botón
+        icon.className = 'fas fa-spinner fa-spin';
+        button.disabled = true;
+        
+        // Realizar petición AJAX
+        fetch('/api/autofind/refresh')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Recargar la página para mostrar datos actualizados
+                    window.location.reload();
+                } else {
+                    throw new Error(data.message || 'Error desconocido');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al actualizar datos: ' + error.message);
+            })
+            .finally(() => {
+                // Restaurar icono y habilitar botón
+                icon.className = 'fas fa-sync-alt';
+                button.disabled = false;
+            });
+    }
+    
+    // Auto-refresh cada 30 segundos (opcional)
+    // setInterval(refreshAutofind, 30000);
+</script>
+
+{% endblock %}

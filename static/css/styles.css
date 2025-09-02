@@ -1,0 +1,60 @@
+.status-online {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.status-offline {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.rx-critical {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+}
+
+.table th {
+    background-color: #343a40;
+    color: white;
+    border: none;
+    font-weight: 600;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge-online {
+    background-color: #28a745;
+}
+
+.badge-offline {
+    background-color: #dc3545;
+}
+
+.loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.metric-card {
+    transition: transform 0.2s;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+}
