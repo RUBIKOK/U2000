@@ -14,10 +14,12 @@ class ONTService:
     def obtener_onts(self, tarjeta: str, puerto: str) -> ONTCollection:
         """Obtiene información de ONTs para un puerto específico"""
         try:
+            logger.info(f"Iniciando consulta de ONTs para tarjeta {tarjeta}, puerto {puerto}")
+            
             # Entrar a la interfaz GPON
             self.connection_service.enter_interface(tarjeta)
             
-            # Ejecutar comandos
+            # Ejecutar comandos en la interfaz
             output_optical = self.connection_service.execute_command(
                 f"display ont optical-info {puerto} all"
             )
@@ -25,6 +27,9 @@ class ONTService:
             output_summary = self.connection_service.execute_command(
                 f"display ont info summary {puerto}"
             )
+            
+            # IMPORTANTE: Salir de la interfaz después de la consulta
+            self.connection_service.exit_interface()
             
             # Debug
             logger.debug(f"Output Summary: {output_summary}")
@@ -39,29 +44,44 @@ class ONTService:
                 ont = ONT(**ont_data)
                 collection.add_ont(ont)
             
-            logger.info(f"Se procesaron {collection.get_total_count()} ONTs")
+            logger.info(f"Se procesaron {collection.get_total_count()} ONTs. Contexto actual: {self.connection_service.get_current_context()}")
             return collection
             
         except Exception as e:
             logger.error(f"Error obteniendo ONTs para {tarjeta}/{puerto}: {e}")
+            # Asegurar que salimos de la interfaz en caso de error
+            try:
+                self.connection_service.exit_interface()
+            except:
+                pass
             raise
     
     def obtener_autofind_onts(self) -> List[Dict[str, str]]:
         """Obtiene información de ONTs detectadas automáticamente (autofind)"""
         try:
-            # Ejecutar comando autofind desde el modo global (no necesita interfaz específica)
-            output_autofind = self.connection_service.execute_command("display ont autofind all")
+            logger.info("Iniciando consulta de autofind ONTs")
+            
+            # Asegurar que estamos en modo config global antes del comando autofind
+            self.connection_service.ensure_config_mode()
+            
+            # Ejecutar comando autofind usando el método para comandos globales
+            output_autofind = self.connection_service.execute_global_command("display ont autofind all")
             
             logger.debug(f"Output Autofind: {output_autofind}")
             
             # Parsear datos
             autofind_onts = self._parse_autofind_data(output_autofind)
             
-            logger.info(f"Se encontraron {len(autofind_onts)} ONTs en autofind")
+            logger.info(f"Se encontraron {len(autofind_onts)} ONTs en autofind. Contexto actual: {self.connection_service.get_current_context()}")
             return autofind_onts
             
         except Exception as e:
             logger.error(f"Error obteniendo ONTs autofind: {e}")
+            # Asegurar modo config en caso de error
+            try:
+                self.connection_service.ensure_config_mode()
+            except:
+                pass
             raise
     
     def _parse_autofind_data(self, output_autofind: str) -> List[Dict[str, str]]:
