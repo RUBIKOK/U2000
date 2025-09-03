@@ -44,22 +44,10 @@ except Exception as e:
 
 @ont_bp.route("/")
 def home():
-    """Página de inicio con información de autofind ONTs"""
-    autofind_list = []
-    
-    try:
-        # Obtener ONTs en autofind
-        autofind_list = ont_service.obtener_autofind_onts()
-        logger.info(f"Se obtuvieron {len(autofind_list)} ONTs en autofind")
-        
-        if autofind_list:
-            flash(f"Se encontraron {len(autofind_list)} ONUs detectadas automáticamente", "info")
-        
-    except Exception as e:
-        logger.error(f"Error obteniendo autofind ONTs: {e}")
-        flash("Error al obtener ONTs detectadas automáticamente", "warning")
-    
-    return render_template("home.html", autofind_list=autofind_list)
+    """Página de inicio - NO carga automáticamente las ONTs en autofind"""
+    # Eliminamos la carga automática de autofind ONTs
+    # Solo mostramos la página vacía, los datos se cargarán al hacer clic en "Actualizar"
+    return render_template("home.html", autofind_list=[])
 
 @ont_bp.route("/onts", methods=["GET", "POST"])
 def ont_page():
@@ -199,11 +187,15 @@ def test_api():
 def refresh_autofind():
     """API endpoint para refrescar datos de autofind"""
     try:
+        logger.info("Iniciando consulta de autofind ONTs")
         autofind_list = ont_service.obtener_autofind_onts()
+        logger.info(f"Se obtuvieron {len(autofind_list)} ONTs en autofind")
+        
         return jsonify({
             "status": "success",
             "count": len(autofind_list),
-            "data": autofind_list
+            "data": autofind_list,
+            "message": f"Se encontraron {len(autofind_list)} ONUs detectadas automáticamente"
         })
     except Exception as e:
         logger.error(f"Error refrescando autofind: {e}")

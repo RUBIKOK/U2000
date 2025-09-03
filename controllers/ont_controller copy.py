@@ -42,50 +42,68 @@ except ImportError as e:
 except Exception as e:
     logger.error(f"Error inicializando BoardService: {e}")
 
-@ont_bp.route("/", methods=["GET", "POST"])
-def index():
-    """Controlador principal para mostrar ONTs"""
-    ont_collection = ONTCollection()
-    tarjeta = "4"
-    puerto = "0"
-    summary = {"total_onts": 0, "online_onts": 0, "critical_onts": 0}
+@ont_bp.route("/")
+def home():
+    """Página de inicio con información de autofind ONTs"""
+    autofind_list = []
     
+    try:
+        # Obtener ONTs en autofind
+        autofind_list = ont_service.obtener_autofind_onts()
+        logger.info(f"Se obtuvieron {len(autofind_list)} ONTs en autofind")
+        
+        if autofind_list:
+            flash(f"Se encontraron {len(autofind_list)} ONUs detectadas automáticamente", "info")
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo autofind ONTs: {e}")
+        flash("Error al obtener ONTs detectadas automáticamente", "warning")
+    
+    return render_template("home.html", autofind_list=autofind_list)
+
+@ont_bp.route("/onts", methods=["GET", "POST"])
+def ont_page():
+    ont_collection = ONTCollection()
+    tarjeta = ""
+    puerto = ""
+    summary = {"total_onts": 0, "online_onts": 0, "critical_onts": 0}
+
     if request.method == "POST":
         tarjeta = request.form.get("tarjeta", "4").strip()
         puerto = request.form.get("puerto", "0").strip()
-        
-        # Validar entrada
         if not tarjeta or not puerto:
             flash("Por favor ingrese tarjeta y puerto válidos", "error")
-            return render_template("index.html", 
-                                 onts=[], tarjeta=tarjeta, puerto=puerto, 
-                                 summary=summary)
-        
-        try:
-            # Obtener datos
-            ont_collection = ont_service.obtener_onts(tarjeta, puerto)
-            summary = ont_collection.get_summary()
-            
-            # Guardar en sesión para exportar
-            session['last_onts'] = ont_collection.to_dict_list()
-            session['last_query'] = f"Tarjeta_{tarjeta}_Puerto_{puerto}"
-            
-            logger.info(f"Consulta exitosa: {summary}")
-            
-            if ont_collection.get_total_count() == 0:
-                flash("No se encontraron ONTs en el puerto especificado", "warning")
-            else:
+        else:
+            try:
+                ont_collection = ont_service.obtener_onts(tarjeta, puerto)
+                summary = ont_collection.get_summary()
+                session['last_onts'] = ont_collection.to_dict_list()
+                session['last_query'] = f"Tarjeta_{tarjeta}_Puerto_{puerto}"
                 flash(f"Se encontraron {ont_collection.get_total_count()} ONTs", "success")
-                
-        except Exception as e:
-            logger.error(f"Error en consulta: {e}")
-            flash(f"Error al consultar ONTs: {str(e)}", "error")
-    
-    return render_template("index.html", 
-                         onts=ont_collection.to_dict_list(),
-                         tarjeta=tarjeta, 
-                         puerto=puerto,
-                         summary=summary)
+            except Exception as e:
+                flash(f"Error al consultar ONTs: {str(e)}", "error")
+
+    return render_template(
+        "ont.html",
+        onts=ont_collection.to_dict_list(),
+        tarjeta=tarjeta,
+        puerto=puerto,
+        summary=summary
+    )
+
+@ont_bp.route("/authorize_ont/<sn>")
+def authorize_ont(sn):
+    """Ruta para autorizar una ONT desde autofind"""
+    try:
+        # Aquí iría la lógica para autorizar la ONT
+        # Por ahora solo mostramos un mensaje
+        flash(f"Funcionalidad de autorización para ONT {sn} - En desarrollo", "info")
+        return redirect(url_for('ont.home'))
+        
+    except Exception as e:
+        logger.error(f"Error autorizando ONT {sn}: {e}")
+        flash(f"Error al autorizar ONT: {str(e)}", "error")
+        return redirect(url_for('ont.home'))
 
 @ont_bp.route("/download_excel")
 def download_excel():
@@ -95,7 +113,7 @@ def download_excel():
         last_onts_data = session.get('last_onts', [])
         if not last_onts_data:
             flash("No hay datos para exportar. Realice una consulta primero.", "error")
-            return redirect(url_for('ont.index'))
+            return redirect(url_for('ont.ont_page'))
         
         # Recrear colección desde los datos de sesión
         ont_collection = ONTCollection()
@@ -133,12 +151,7 @@ def download_excel():
     except Exception as e:
         logger.error(f"Error generando Excel: {e}")
         flash(f"Error al generar el archivo Excel: {str(e)}", "error")
-        return redirect(url_for('ont.index'))
-
-@ont_bp.route("/home")
-def home():
-    """home"""
-    return render_template("home.html")
+        return redirect(url_for('ont.ont_page'))
 
 @ont_bp.route("/monitor")
 def monitor():
@@ -158,7 +171,7 @@ def get_board_data(tarjeta):
             }), 500
 
         # Validar formato de tarjeta (ejemplo: "0/2")
-        if not re.match(r'^(1[0-5]|[1-9])$', tarjeta):
+        if not re.match(r'^(1[0-7]|[1-9])$', tarjeta):
             logger.warning(f"Formato de tarjeta inválido: {tarjeta}")
             return jsonify({
                 "error": "Formato de tarjeta inválido. Solo se permiten números entre 1 y 15"
@@ -182,6 +195,23 @@ def test_api():
         "board_service_available": board_service is not None
     })
 
+@ont_bp.route("/api/autofind/refresh")
+def refresh_autofind():
+    """API endpoint para refrescar datos de autofind"""
+    try:
+        autofind_list = ont_service.obtener_autofind_onts()
+        return jsonify({
+            "status": "success",
+            "count": len(autofind_list),
+            "data": autofind_list
+        })
+    except Exception as e:
+        logger.error(f"Error refrescando autofind: {e}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 @ont_bp.errorhandler(Exception)
 def handle_error(error):
     """Manejo global de errores"""
@@ -194,4 +224,4 @@ def handle_error(error):
     
     # Si es una petición normal, mostrar mensaje flash
     flash("Ha ocurrido un error inesperado. Por favor intente nuevamente.", "error")
-    return redirect(url_for('ont.index'))
+    return redirect(url_for('ont.home'))
