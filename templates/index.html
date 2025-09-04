@@ -334,7 +334,7 @@
             <div class="nav-section">
                 <div class="nav-section-title">Herramientas</div>
                 <div class="nav-item">
-                    <a href="{{ url_for('ont.download_excel') }}" class="nav-link">
+                    <a class="nav-link" data-bs-toggle="modal" data-bs-target="#excelModal" href="#">
                         <i class="fas fa-file-excel"></i>
                         Exportar Excel
                     </a>
@@ -388,37 +388,142 @@
 
         <div class="content-wrapper">
             {% block content %}{% endblock %}
-            <script>
-                // Sidebar functionality
-                const sidebar = document.getElementById('sidebar');
-                const mainContent = document.getElementById('mainContent');
-                const sidebarToggle = document.getElementById('sidebarToggle');
-                const mobileOverlay = document.getElementById('mobileOverlay');
+        </div>
+    </div>
 
-                sidebarToggle.addEventListener('click', () => {
-                    if (window.innerWidth <= 768) {
-                        sidebar.classList.toggle('show');
-                        mobileOverlay.classList.toggle('show');
-                    } else {
-                        sidebar.classList.toggle('collapsed');
-                        mainContent.classList.toggle('full-width');
-                    }
-                });
-
-                mobileOverlay.addEventListener('click', () => {
-                    sidebar.classList.remove('show');
-                    mobileOverlay.classList.remove('show');
-                });
-
-
-                // Responsive handling
-                window.addEventListener('resize', () => {
-                    if (window.innerWidth > 768) {
-                        sidebar.classList.remove('show');
-                        mobileOverlay.classList.remove('show');
-                    }
-                });
-            </script>
+    <!-- Modal para opciones de Excel -->
+    <div class="modal fade" id="excelModal" tabindex="-1" aria-labelledby="excelModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="excelModalLabel">
+                        <i class="fas fa-file-excel"></i> Opciones de Exportación Excel
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Opción 1: Exportar por Puerto -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-success">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="fas fa-plug"></i> Exportar por Puerto</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted small">Descargar datos específicos de un puerto PON</p>
+                                    <form id="exportPuertoForm">
+                                        <div class="mb-3">
+                                            <label for="tarjetaPuerto" class="form-label">
+                                                <i class="fas fa-microchip"></i> Tarjeta
+                                            </label>
+                                            <select class="form-select" id="tarjetaPuerto" name="tarjeta" required>
+                                                <option value="">Seleccionar tarjeta...</option>
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                                <option value="5">5</option>
+                                                <option value="6">6</option>
+                                                <option value="7">7</option>
+                                                <option value="8">8</option>
+                                                <option value="9">9</option>
+                                                <option value="10">10</option>
+                                                <option value="11">11</option>
+                                                <option value="12">12</option>
+                                                <option value="13">13</option>
+                                                <option value="14">14</option>
+                                                <option value="15">15</option>
+                                                <option value="16">16</option>
+                                                <option value="17">17</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="puertoSelect" class="form-label">
+                                                <i class="fas fa-ethernet"></i> Puerto
+                                            </label>
+                                            <select class="form-select" id="puertoSelect" name="puerto" required>
+                                                <option value="">Seleccionar puerto...</option>
+                                                <option value="0">0</option>
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                                <option value="5">5</option>
+                                                <option value="6">6</option>
+                                                <option value="7">7</option>
+                                                <option value="8">8</option>
+                                                <option value="9">9</option>
+                                                <option value="10">10</option>
+                                                <option value="11">11</option>
+                                                <option value="12">12</option>
+                                                <option value="13">13</option>
+                                                <option value="14">14</option>
+                                                <option value="15">15</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="fas fa-download"></i> Exportar Puerto
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Opción 2: Exportar por Tarjeta -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-info">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="fas fa-microchip"></i> Exportar por Tarjeta</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted small">Descargar todos los datos de una tarjeta completa</p>
+                                    <form id="exportTarjetaForm">
+                                        <div class="mb-3">
+                                            <label for="tarjetaCompleta" class="form-label">
+                                                <i class="fas fa-microchip"></i> Tarjeta
+                                            </label>
+                                            <select class="form-select" id="tarjetaCompleta" name="tarjeta" required>
+                                                <option value="">Seleccionar tarjeta...</option>
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+                                                <option value="4">4</option>
+                                                <option value="5">5</option>
+                                                <option value="6">6</option>
+                                                <option value="7">7</option>
+                                                <option value="8">8</option>
+                                                <option value="9">9</option>
+                                                <option value="10">10</option>
+                                                <option value="11">11</option>
+                                                <option value="12">12</option>
+                                                <option value="13">13</option>
+                                                <option value="14">14</option>
+                                                <option value="15">15</option>
+                                                <option value="16">16</option>
+                                                <option value="17">17</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-4">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle"></i>
+                                                <small>Se exportarán todos los puertos de la tarjeta seleccionada</small>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-info w-100">
+                                            <i class="fas fa-download"></i> Exportar Tarjeta
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -429,6 +534,81 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Sidebar functionality
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const mobileOverlay = document.getElementById('mobileOverlay');
+
+        sidebarToggle.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('show');
+                mobileOverlay.classList.toggle('show');
+            } else {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('full-width');
+            }
+        });
+
+        mobileOverlay.addEventListener('click', () => {
+            sidebar.classList.remove('show');
+            mobileOverlay.classList.remove('show');
+        });
+
+        // Responsive handling
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('show');
+                mobileOverlay.classList.remove('show');
+            }
+        });
+
+        // Handlers para formularios de exportación
+        document.addEventListener('DOMContentLoaded', function() {
+            // Event handler para exportar por puerto
+            const exportPuertoForm = document.getElementById('exportPuertoForm');
+            if (exportPuertoForm) {
+                exportPuertoForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const tarjeta = document.getElementById('tarjetaPuerto').value;
+                    const puerto = document.getElementById('puertoSelect').value;
+                    
+                    if (!tarjeta || !puerto) {
+                        alert('Por favor seleccione tarjeta y puerto');
+                        return;
+                    }
+                    
+                    // Por ahora solo mostrar alerta - aquí iría la lógica de exportación
+                    alert(`Exportando puerto: Tarjeta ${tarjeta}, Puerto ${puerto}`);
+                    // Cerrar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('excelModal'));
+                    if (modal) modal.hide();
+                });
+            }
+
+            // Event handler para exportar por tarjeta
+            const exportTarjetaForm = document.getElementById('exportTarjetaForm');
+            if (exportTarjetaForm) {
+                exportTarjetaForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const tarjeta = document.getElementById('tarjetaCompleta').value;
+                    
+                    if (!tarjeta) {
+                        alert('Por favor seleccione una tarjeta');
+                        return;
+                    }
+                    
+                    // Por ahora solo mostrar alerta - aquí iría la lógica de exportación
+                    alert(`Exportando tarjeta completa: ${tarjeta}`);
+                    // Cerrar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('excelModal'));
+                    if (modal) modal.hide();
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

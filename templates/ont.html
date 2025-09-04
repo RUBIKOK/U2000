@@ -30,7 +30,8 @@
     <!-- Header profesional -->
     <div class="row mb-5">
         <div class="col-12">
-            <div class="d-flex align-items-center justify-content-between p-4 bg-gradient rounded shadow-sm border-start border-primary border-4">
+            <div
+                class="d-flex align-items-center justify-content-between p-4 bg-gradient rounded shadow-sm border-start border-primary border-4">
                 <div class="d-flex align-items-center">
                     <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
                         <i class="fa-solid fa-ethernet fa-2x text-primary"></i>
@@ -62,15 +63,50 @@
                 <label for="tarjeta" class="form-label">
                     <i class="fas fa-microchip"></i> Tarjeta
                 </label>
-                <input type="text" class="form-control" id="tarjeta" name="tarjeta" placeholder="Ej: 4"
-                    value="{{ tarjeta }}" required>
+                <select class="form-control" id="tarjeta" name="tarjeta" required>
+                    <option value="">Seleccionar tarjeta...</option>
+                    <option value="1" {% if tarjeta=="1" %}selected{% endif %}>1</option>
+                    <option value="2" {% if tarjeta=="2" %}selected{% endif %}>2</option>
+                    <option value="3" {% if tarjeta=="3" %}selected{% endif %}>3</option>
+                    <option value="4" {% if tarjeta=="4" %}selected{% endif %}>4</option>
+                    <option value="5" {% if tarjeta=="5" %}selected{% endif %}>5</option>
+                    <option value="6" {% if tarjeta=="6" %}selected{% endif %}>6</option>
+                    <option value="7" {% if tarjeta=="7" %}selected{% endif %}>7</option>
+                    <option value="8" {% if tarjeta=="8" %}selected{% endif %}>8</option>
+                    <option value="9" {% if tarjeta=="9" %}selected{% endif %}>9</option>
+                    <option value="10" {% if tarjeta=="10" %}selected{% endif %}>10</option>
+                    <option value="11" {% if tarjeta=="11" %}selected{% endif %}>11</option>
+                    <option value="12" {% if tarjeta=="12" %}selected{% endif %}>12</option>
+                    <option value="13" {% if tarjeta=="13" %}selected{% endif %}>13</option>
+                    <option value="14" {% if tarjeta=="14" %}selected{% endif %}>14</option>
+                    <option value="15" {% if tarjeta=="15" %}selected{% endif %}>15</option>
+                    <option value="16" {% if tarjeta=="16" %}selected{% endif %}>16</option>
+                    <option value="17" {% if tarjeta=="17" %}selected{% endif %}>17</option>
+                </select>
             </div>
             <div class="col-md-4">
                 <label for="puerto" class="form-label">
                     <i class="fas fa-plug"></i> Puerto
                 </label>
-                <input type="text" class="form-control" id="puerto" name="puerto" placeholder="Ej: 0"
-                    value="{{ puerto }}" required>
+                <select class="form-control" id="puerto" name="puerto" required>
+                    <option value="">Seleccionar puerto...</option>
+                    <option value="0" {% if tarjeta=="0" %}selected{% endif %}>0</option>
+                    <option value="1" {% if tarjeta=="1" %}selected{% endif %}>1</option>
+                    <option value="2" {% if tarjeta=="2" %}selected{% endif %}>2</option>
+                    <option value="3" {% if tarjeta=="3" %}selected{% endif %}>3</option>
+                    <option value="4" {% if tarjeta=="4" %}selected{% endif %}>4</option>
+                    <option value="5" {% if tarjeta=="5" %}selected{% endif %}>5</option>
+                    <option value="6" {% if tarjeta=="6" %}selected{% endif %}>6</option>
+                    <option value="7" {% if tarjeta=="7" %}selected{% endif %}>7</option>
+                    <option value="8" {% if tarjeta=="8" %}selected{% endif %}>8</option>
+                    <option value="9" {% if tarjeta=="9" %}selected{% endif %}>9</option>
+                    <option value="10" {% if tarjeta=="10" %}selected{% endif %}>10</option>
+                    <option value="11" {% if tarjeta=="11" %}selected{% endif %}>11</option>
+                    <option value="12" {% if tarjeta=="12" %}selected{% endif %}>12</option>
+                    <option value="13" {% if tarjeta=="13" %}selected{% endif %}>13</option>
+                    <option value="14" {% if tarjeta=="14" %}selected{% endif %}>14</option>
+                    <option value="15" {% if tarjeta=="15" %}selected{% endif %}>15</option>
+                </select>
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100" id="submitBtn">
@@ -116,6 +152,9 @@
             Resultados - Tarjeta {{ tarjeta }} Puerto {{ puerto }}
         </h6>
         <div>
+            <a href="{{ url_for('ont.download_excel') }}" class="btn btn-outline-success btn-sm">
+                <i class="fas fa-file-excel"></i> Descargar Excel
+            </a>
             <button class="btn btn-outline-secondary btn-sm ms-2" onclick="window.location.reload()">
                 <i class="fas fa-sync-alt"></i> Actualizar
             </button>
