@@ -1,3 +1,4 @@
+import io
 from flask import Blueprint, request, render_template, send_file, flash, redirect, url_for, session, jsonify
 import logging
 import sys
@@ -79,6 +80,45 @@ def ont_page():
         summary=summary
     )
 
+@ont_bp.route("/download_tarjeta/<tarjeta>")
+def download_tarjeta(tarjeta):
+    """Consulta todos los puertos (0-15) de una tarjeta y descarga el Excel"""
+    try:
+        if not tarjeta:
+            flash("Por favor ingrese una tarjeta válida", "error")
+            return redirect(url_for("ont.index"))
+
+        all_onts = ONTCollection()
+        for p in range(16):  # puertos 0-15
+            try:
+                partial = ont_service.obtener_onts(tarjeta, str(p))
+                all_onts.extend(partial)  # ⚠️ tu ONTCollection debe soportar extend
+            except Exception as e:
+                # No detiene todo si un puerto falla, solo avisa
+                logger.warning(f"Error en puerto {p}: {e}")
+                continue
+
+        if all_onts.get_total_count() == 0:
+            flash("No se encontraron ONTs en la tarjeta.", "warning")
+            return redirect(url_for("ont.index"))
+
+        # Generar archivo Excel
+        file_stream = excel_service.generar_reporte(all_onts)
+
+        filename = f"Reporte_Tarjeta_{tarjeta}_Puertos_0_15.xlsx"
+
+        return send_file(
+            file_stream,
+            as_attachment=True,
+            download_name=filename,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    except Exception as e:
+        logger.error(f"Error generando Excel para tarjeta {tarjeta}: {e}")
+        flash(f"Error al generar Excel: {str(e)}", "error")
+        return redirect(url_for("ont.index"))
+
 @ont_bp.route("/authorize_ont/<sn>")
 def authorize_ont(sn):
     """Ruta para autorizar una ONT desde autofind"""
@@ -117,6 +157,7 @@ def download_excel():
                 temperature=ont_data['temperature'],
                 distance=ont_data['distance'],
                 estado=ont_data['estado'],
+                last_down_time=ont_data['last_down_time'],
                 last_down_cause=ont_data['last_down_cause'],
                 descripcion=ont_data['descripcion']
             )

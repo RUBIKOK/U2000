@@ -90,22 +90,22 @@
                 </label>
                 <select class="form-control" id="puerto" name="puerto" required>
                     <option value="">Seleccionar puerto...</option>
-                    <option value="0" {% if tarjeta=="0" %}selected{% endif %}>0</option>
-                    <option value="1" {% if tarjeta=="1" %}selected{% endif %}>1</option>
-                    <option value="2" {% if tarjeta=="2" %}selected{% endif %}>2</option>
-                    <option value="3" {% if tarjeta=="3" %}selected{% endif %}>3</option>
-                    <option value="4" {% if tarjeta=="4" %}selected{% endif %}>4</option>
-                    <option value="5" {% if tarjeta=="5" %}selected{% endif %}>5</option>
-                    <option value="6" {% if tarjeta=="6" %}selected{% endif %}>6</option>
-                    <option value="7" {% if tarjeta=="7" %}selected{% endif %}>7</option>
-                    <option value="8" {% if tarjeta=="8" %}selected{% endif %}>8</option>
-                    <option value="9" {% if tarjeta=="9" %}selected{% endif %}>9</option>
-                    <option value="10" {% if tarjeta=="10" %}selected{% endif %}>10</option>
-                    <option value="11" {% if tarjeta=="11" %}selected{% endif %}>11</option>
-                    <option value="12" {% if tarjeta=="12" %}selected{% endif %}>12</option>
-                    <option value="13" {% if tarjeta=="13" %}selected{% endif %}>13</option>
-                    <option value="14" {% if tarjeta=="14" %}selected{% endif %}>14</option>
-                    <option value="15" {% if tarjeta=="15" %}selected{% endif %}>15</option>
+                    <option value="0" {% if puerto=="0" %}selected{% endif %}>0</option>
+                    <option value="1" {% if puerto=="1" %}selected{% endif %}>1</option>
+                    <option value="2" {% if puerto=="2" %}selected{% endif %}>2</option>
+                    <option value="3" {% if puerto=="3" %}selected{% endif %}>3</option>
+                    <option value="4" {% if puerto=="4" %}selected{% endif %}>4</option>
+                    <option value="5" {% if puerto=="5" %}selected{% endif %}>5</option>
+                    <option value="6" {% if puerto=="6" %}selected{% endif %}>6</option>
+                    <option value="7" {% if puerto=="7" %}selected{% endif %}>7</option>
+                    <option value="8" {% if puerto=="8" %}selected{% endif %}>8</option>
+                    <option value="9" {% if puerto=="9" %}selected{% endif %}>9</option>
+                    <option value="10" {% if puerto=="10" %}selected{% endif %}>10</option>
+                    <option value="11" {% if puerto=="11" %}selected{% endif %}>11</option>
+                    <option value="12" {% if puerto=="12" %}selected{% endif %}>12</option>
+                    <option value="13" {% if puerto=="13" %}selected{% endif %}>13</option>
+                    <option value="14" {% if puerto=="14" %}selected{% endif %}>14</option>
+                    <option value="15" {% if puerto=="15" %}selected{% endif %}>15</option>
                 </select>
             </div>
             <div class="col-md-4 d-flex align-items-end">
@@ -175,7 +175,8 @@
                         <th><i class="fas fa-thermometer-half"></i> Temp</th>
                         <th><i class="fas fa-ruler"></i> Distancia</th>
                         <th><i class="fas fa-circle"></i> Estado</th>
-                        <th><i class="fas fa-info-circle"></i> Última Caída</th>
+                        <!-- <th><i class="fas fa-info-circle"></i> Hora Caída</th>
+                        <th><i class="fas fa-info-circle"></i> Última Caída</th> -->
                         <th><i class="fas fa-cogs"></i> Acciones</th>
                     </tr>
                 </thead>
@@ -227,9 +228,12 @@
                             </span>
                             {% endif %}
                         </td>
+                        <!-- <td>
+                            <small class="text-muted">{{ ont.last_down_time or '-' }}</small>
+                        </td>
                         <td>
                             <small class="text-muted">{{ ont.last_down_cause or '-' }}</small>
-                        </td>
+                        </td> -->
                         <td>
                             <div class="btn-group btn-group-sm">
                                 <button class="btn btn-outline-info btn-sm" title="Ver detalles"

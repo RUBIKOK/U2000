@@ -21,7 +21,7 @@ class ExcelService:
         # Encabezados
         headers = [
             "ID ONU", "DESCRIPCION", "ONT RX", "OLT RX", "DIFERENCIA",
-            "TEMPERATURA", "DISTANCIA", "ESTADO", "ULTIMA CAIDA"
+            "TEMPERATURA", "DISTANCIA", "ESTADO", "HORA CAIDA", "ULTIMA CAIDA"
         ]
         
         # Aplicar encabezados con estilo
@@ -53,7 +53,8 @@ class ExcelService:
             else:
                 estado_cell.font = Font(color="FF0000")  # Rojo para offline
             
-            ws.cell(row=row, column=9, value=ont.last_down_cause)
+            ws.cell(row=row, column=9, value=ont.last_down_time)
+            ws.cell(row=row, column=10, value=ont.last_down_cause)
         
         # Ajustar ancho de columnas
         for column in ws.columns:
@@ -76,3 +77,4 @@ class ExcelService:
         file_stream.seek(0)
         
         return file_stream
+    

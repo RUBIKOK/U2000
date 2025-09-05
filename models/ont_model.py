@@ -13,6 +13,7 @@ class ONT:
     temperature: Optional[int] = None
     distance: Optional[int] = None
     estado: str = ""
+    last_down_time: str = ""
     last_down_cause: str = ""
     descripcion: str = ""
     
@@ -41,6 +42,7 @@ class ONT:
             'temperature': self.temperature,
             'distance': self.distance,
             'estado': self.estado,
+            'last_down_time': self.last_down_time,
             'last_down_cause': self.last_down_cause,
             'descripcion': self.descripcion,
             'is_online': self.is_online(),
@@ -57,6 +59,9 @@ class ONTCollection:
         """Agrega una ONT a la colección"""
         self.onts.append(ont)
     
+    def extend(self, other_collection):
+        self.onts.extend(other_collection.onts)
+        
     def get_total_count(self) -> int:
         """Retorna el total de ONTs"""
         return len(self.onts)

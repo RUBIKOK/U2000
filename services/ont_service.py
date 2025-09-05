@@ -55,6 +55,51 @@ class ONTService:
             except:
                 pass
             raise
+
+    def obtener_tarjeta(self, tarjeta: str, puerto: str) -> ONTCollection:
+        """Obtiene información de ONTs para un puerto específico"""
+        try:
+            logger.info(f"Iniciando consulta de ONTs para tarjeta {tarjeta}, puerto {puerto}")
+            
+            # Entrar a la interfaz GPON
+            self.connection_service.enter_interface(tarjeta)
+            
+            # Ejecutar comandos en la interfaz
+            output_optical = self.connection_service.execute_command(
+                f"display ont optical-info {puerto} all"
+            )
+            
+            output_summary = self.connection_service.execute_command(
+                f"display ont info summary {puerto}"
+            )
+            
+            # IMPORTANTE: Salir de la interfaz después de la consulta
+            self.connection_service.exit_interface()
+            
+            # Debug
+            logger.debug(f"Output Summary: {output_summary}")
+            logger.debug(f"Output Optical: {output_optical}")
+            
+            # Parsear datos
+            onts_data = self._parse_ont_data(output_summary, output_optical, tarjeta, puerto)
+            
+            # Crear colección
+            collection = ONTCollection()
+            for ont_data in onts_data.values():
+                ont = ONT(**ont_data)
+                collection.add_ont(ont)
+            
+            logger.info(f"Se procesaron {collection.get_total_count()} ONTs. Contexto actual: {self.connection_service.get_current_context()}")
+            return collection
+            
+        except Exception as e:
+            logger.error(f"Error obteniendo ONTs para {tarjeta}/{puerto}: {e}")
+            # Asegurar que salimos de la interfaz en caso de error
+            try:
+                self.connection_service.exit_interface()
+            except:
+                pass
+            raise
     
     def obtener_autofind_onts(self) -> List[Dict[str, str]]:
         """Obtiene información de ONTs detectadas automáticamente (autofind)"""
@@ -212,21 +257,36 @@ class ONTService:
             # Parsear estados
             if estado_start and line and not line.startswith('-'):
                 parts = line.split()
-                if len(parts) >= 2 and parts[0].isdigit():
+                if len(parts) >= 3 and parts[0].isdigit():
                     ont_id = parts[0]
                     estado = parts[1]
-                    
-                    # Buscar la causa (último elemento si no es '-')
+
+                    # Inicializar valores
                     causa = ""
-                    if len(parts) > 4 and parts[-1] != '-':
-                        causa = parts[-1]
-                    
+                    last_down_time = ""
+
+                    # Si hay suficiente longitud en parts para fecha + hora
+                    # (ej: [..., "2025-08-31", "10:13:30", "LOS"])
+                    if len(parts) > 5:
+                        # Últimos 3 tokens → fecha, hora, causa
+                        posible_fecha = parts[-3]
+                        posible_hora = parts[-2]
+                        posible_causa = parts[-1]
+
+                        # Validar que tenga formato de fecha
+                        if "-" in posible_fecha and ":" in posible_hora:
+                            last_down_time = f"{posible_fecha} {posible_hora}"
+                        
+                        if posible_causa != "-":
+                            causa = posible_causa
+
                     onts[ont_id] = {
                         'id': ont_id,
                         'tarjeta': tarjeta,
                         'puerto': puerto,
                         'estado': estado,
                         'last_down_cause': causa,
+                        'last_down_time': last_down_time,
                         'descripcion': ""
                     }
             
@@ -251,6 +311,8 @@ class ONTService:
                         
                         if desc_parts:
                             onts[ont_id]['descripcion'] = '_'.join(desc_parts)
+
+
     
     def _parse_optical_data(self, output_optical: str, onts: Dict[str, dict]):
         """Parsea la información del comando optical"""

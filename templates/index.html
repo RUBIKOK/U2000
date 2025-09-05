@@ -399,12 +399,12 @@
                     <h5 class="modal-title" id="excelModalLabel">
                         <i class="fas fa-file-excel"></i> Opciones de Exportación Excel
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <!-- Opción 1: Exportar por Puerto -->
-                        <div class="col-md-6">
+                    <!-- Opción 1: Exportar por Puerto -->
+                    <!-- <div class="col-md-6">
                             <div class="card h-100 border-success">
                                 <div class="card-header bg-success text-white">
                                     <h6 class="mb-0"><i class="fas fa-plug"></i> Exportar por Puerto</h6>
@@ -467,54 +467,52 @@
                                     </form>
                                 </div>
                             </div>
+                        </div> -->
+
+                    <!-- Opción 2: Exportar por Tarjeta -->
+                    <div class="card h-100 border-info">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-microchip"></i> Exportar por Tarjeta</h6>
                         </div>
-                        
-                        <!-- Opción 2: Exportar por Tarjeta -->
-                        <div class="col-md-6">
-                            <div class="card h-100 border-info">
-                                <div class="card-header bg-info text-white">
-                                    <h6 class="mb-0"><i class="fas fa-microchip"></i> Exportar por Tarjeta</h6>
+                        <div class="card-body">
+                            <p class="text-muted small">Descargar todos los datos de una tarjeta completa</p>
+                            <form id="exportTarjetaForm">
+                                <div class="mb-3">
+                                    <label for="tarjetaCompleta" class="form-label">
+                                        <i class="fas fa-microchip"></i> Tarjeta
+                                    </label>
+                                    <select class="form-select" id="tarjetaCompleta" name="tarjeta" required>
+                                        <option value="">Seleccionar tarjeta...</option>
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5</option>
+                                        <option value="6">6</option>
+                                        <option value="7">7</option>
+                                        <option value="8">8</option>
+                                        <option value="9">9</option>
+                                        <option value="10">10</option>
+                                        <option value="11">11</option>
+                                        <option value="12">12</option>
+                                        <option value="13">13</option>
+                                        <option value="14">14</option>
+                                        <option value="15">15</option>
+                                        <option value="16">16</option>
+                                        <option value="17">17</option>
+                                    </select>
                                 </div>
-                                <div class="card-body">
-                                    <p class="text-muted small">Descargar todos los datos de una tarjeta completa</p>
-                                    <form id="exportTarjetaForm">
-                                        <div class="mb-3">
-                                            <label for="tarjetaCompleta" class="form-label">
-                                                <i class="fas fa-microchip"></i> Tarjeta
-                                            </label>
-                                            <select class="form-select" id="tarjetaCompleta" name="tarjeta" required>
-                                                <option value="">Seleccionar tarjeta...</option>
-                                                <option value="1">1</option>
-                                                <option value="2">2</option>
-                                                <option value="3">3</option>
-                                                <option value="4">4</option>
-                                                <option value="5">5</option>
-                                                <option value="6">6</option>
-                                                <option value="7">7</option>
-                                                <option value="8">8</option>
-                                                <option value="9">9</option>
-                                                <option value="10">10</option>
-                                                <option value="11">11</option>
-                                                <option value="12">12</option>
-                                                <option value="13">13</option>
-                                                <option value="14">14</option>
-                                                <option value="15">15</option>
-                                                <option value="16">16</option>
-                                                <option value="17">17</option>
-                                            </select>
-                                        </div>
-                                        <div class="mb-4">
-                                            <div class="alert alert-info">
-                                                <i class="fas fa-info-circle"></i>
-                                                <small>Se exportarán todos los puertos de la tarjeta seleccionada</small>
-                                            </div>
-                                        </div>
-                                        <button type="submit" class="btn btn-info w-100">
-                                            <i class="fas fa-download"></i> Exportar Tarjeta
-                                        </button>
-                                    </form>
+                                <div class="mb-4">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i>
+                                        <small>Se exportarán todos los puertos de la tarjeta
+                                            seleccionada</small>
+                                    </div>
                                 </div>
-                            </div>
+                                <button type="submit" class="btn btn-info w-100" id="submit-tarjeta">
+                                    <i class="fas fa-download"></i> Exportar Tarjeta
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -566,48 +564,35 @@
         });
 
         // Handlers para formularios de exportación
-        document.addEventListener('DOMContentLoaded', function() {
-            // Event handler para exportar por puerto
-            const exportPuertoForm = document.getElementById('exportPuertoForm');
-            if (exportPuertoForm) {
-                exportPuertoForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const tarjeta = document.getElementById('tarjetaPuerto').value;
-                    const puerto = document.getElementById('puertoSelect').value;
-                    
-                    if (!tarjeta || !puerto) {
-                        alert('Por favor seleccione tarjeta y puerto');
-                        return;
-                    }
-                    
-                    // Por ahora solo mostrar alerta - aquí iría la lógica de exportación
-                    alert(`Exportando puerto: Tarjeta ${tarjeta}, Puerto ${puerto}`);
-                    // Cerrar modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('excelModal'));
-                    if (modal) modal.hide();
-                });
-            }
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("exportTarjetaForm");
+            const loadingOverlay = document.getElementById("loadingOverlay");
+            const submitBtn = document.getElementById("submit-tarjeta");
+            const selectTarjeta = document.getElementById("tarjetaCompleta");
 
-            // Event handler para exportar por tarjeta
-            const exportTarjetaForm = document.getElementById('exportTarjetaForm');
-            if (exportTarjetaForm) {
-                exportTarjetaForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const tarjeta = document.getElementById('tarjetaCompleta').value;
-                    
-                    if (!tarjeta) {
-                        alert('Por favor seleccione una tarjeta');
-                        return;
-                    }
-                    
-                    // Por ahora solo mostrar alerta - aquí iría la lógica de exportación
-                    alert(`Exportando tarjeta completa: ${tarjeta}`);
-                    // Cerrar modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('excelModal'));
-                    if (modal) modal.hide();
-                });
-            }
+
+
+            form.addEventListener("submit", function (e) {
+                e.preventDefault(); // evitamos POST normal
+
+                const tarjeta = document.getElementById("tarjetaCompleta").value.trim();
+                if (!tarjeta) {
+                    alert("Por favor seleccione una tarjeta");
+                    return;
+                }
+
+                // Mostrar overlay de carga
+                loadingOverlay.classList.add('show');
+
+                // Deshabilitar botón
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando Excel...';
+
+                // Redirigir a la URL de descarga
+                window.location.href = `/download_tarjeta/${tarjeta}`;
+            });
         });
+
     </script>
 </body>
 
