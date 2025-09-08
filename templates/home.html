@@ -1,9 +1,6 @@
 {% extends "index.html" %}
 
 {% block status %}active{% endblock %}
-{% block title %}Home - OLT Monitor{% endblock %}
-{% block page_title %}Bienvenido{% endblock %}
-{% block page_subtitle %}Pantalla de inicio{% endblock %}
 
 {% block content %}
 <div class="container py-5">
@@ -198,16 +195,6 @@
         const counterBadge = document.getElementById('counterBadge');
         const onusCount = document.getElementById('onusCount');
         
-        // Actualizar contadores - mostrar
-        // counterBadge.textContent = `${count} ONUs detectadas`;
-        // onusCount.textContent = count;
-        
-        // if (count > 0) {
-        //     resultsCounter.style.display = 'block';
-        // } else {
-        //     resultsCounter.style.display = 'none';
-        // }
-        
         // Limpiar tabla
         tableBody.innerHTML = '';
         
@@ -313,12 +300,6 @@
     updateClock();
     setInterval(updateClock, 1000);
     
-    // Auto-refresh opcional cada 60 segundos (comentado por defecto)
-    // setInterval(() => {
-    //     if (!isRefreshing) {
-    //         refreshAutofind();
-    //     }
-    // }, 60000);
 </script>
 
 {% endblock %}

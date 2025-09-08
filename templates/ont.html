@@ -1,9 +1,6 @@
 {% extends "index.html" %}
 
 {% block status %}active{% endblock %}
-{% block title %}Monitor Individual ONTs{% endblock %}
-{% block page_title %}Monitor ONTs{% endblock %}
-{% block page_subtitle %}Consulta individual de ONTs por tarjeta y puerto{% endblock %}
 
 {% block content %}
 <!-- Page Content -->
@@ -175,8 +172,6 @@
                         <th><i class="fas fa-thermometer-half"></i> Temp</th>
                         <th><i class="fas fa-ruler"></i> Distancia</th>
                         <th><i class="fas fa-circle"></i> Estado</th>
-                        <!-- <th><i class="fas fa-info-circle"></i> Hora Caída</th>
-                        <th><i class="fas fa-info-circle"></i> Última Caída</th> -->
                         <th><i class="fas fa-cogs"></i> Acciones</th>
                     </tr>
                 </thead>
@@ -228,12 +223,6 @@
                             </span>
                             {% endif %}
                         </td>
-                        <!-- <td>
-                            <small class="text-muted">{{ ont.last_down_time or '-' }}</small>
-                        </td>
-                        <td>
-                            <small class="text-muted">{{ ont.last_down_cause or '-' }}</small>
-                        </td> -->
                         <td>
                             <div class="btn-group btn-group-sm">
                                 <button class="btn btn-outline-info btn-sm" title="Ver detalles"
