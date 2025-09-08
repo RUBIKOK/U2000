@@ -7,25 +7,29 @@ logger = logging.getLogger(__name__)
 class BoardService:
     """Servicio para operaciones con tarjetas GPON"""
     
-    def __init__(self, connection_service):
-        self.connection_service = connection_service
+    def __init__(self, session_connection):
+        """
+        Args:
+            session_connection: Instancia de SessionConnection del pool
+        """
+        self.session_connection = session_connection
     
     def obtener_puertos_tarjeta(self, tarjeta: str) -> Dict:
         """
-        Obtiene informaciÃ³n de todos los puertos de una tarjeta
+        Obtiene información de todos los puertos de una tarjeta
         Args:
-            tarjeta: formato "0/2" o "0/3"
+            tarjeta: formato "1" o "2" etc.
         Returns:
-            Dict con informaciÃ³n de puertos y estadÃ­sticas
+            Dict con información de puertos y estadísticas
         """
         try:
-            logger.info(f"Iniciando consulta para tarjeta {tarjeta}")
+            logger.info(f"Iniciando consulta para tarjeta {tarjeta} en sesión {self.session_connection.session_id}")
             
             # Ejecutar comando display board
             command = f"display board 0/{tarjeta} | include port"
             logger.info(f"Ejecutando comando: {command}")
             
-            output = self.connection_service.execute_command(command, delay_factor=2, timeout=30)
+            output = self.session_connection.execute_command(command, delay_factor=2, timeout=30)
             
             logger.info(f"Comando ejecutado, procesando output...")
             logger.debug(f"Output del comando board: {output}")
@@ -33,11 +37,11 @@ class BoardService:
             # Parsear datos
             puertos_data = self._parse_board_output(output, tarjeta)
             
-            logger.info(f"Se procesaron {len(puertos_data['puertos'])} puertos para tarjeta {tarjeta}")
+            logger.info(f"Se procesaron {len(puertos_data['puertos'])} puertos para tarjeta {tarjeta} en sesión {self.session_connection.session_id}")
             return puertos_data
             
         except Exception as e:
-            logger.error(f"Error obteniendo puertos de tarjeta {tarjeta}: {str(e)}")
+            logger.error(f"Error obteniendo puertos de tarjeta {tarjeta} en sesión {self.session_connection.session_id}: {str(e)}")
             raise Exception(f"Error en consulta de tarjeta: {str(e)}")
     
     def _parse_board_output(self, output: str, tarjeta: str) -> Dict:
@@ -45,9 +49,9 @@ class BoardService:
         puertos = []
         lines = output.split('\n')
         
-        logger.info(f"Parseando {len(lines)} lÃ­neas de output")
+        logger.info(f"Parseando {len(lines)} líneas de output")
         
-        # PatrÃ³n para capturar: In port 0/ 2/0 , the total of ONTs are:  33, online:  31
+        # Patrón para capturar: In port 0/ 2/0 , the total of ONTs are:  33, online:  31
         pattern = r'In port (\d+/\s*\d+/\d+)\s*,\s*the total of ONTs are:\s*(\d+),\s*online:\s*(\d+)'
         
         for i, line in enumerate(lines):
@@ -62,7 +66,7 @@ class BoardService:
                     total_onts = int(match.group(2))
                     online_onts = int(match.group(3))
                     
-                    # Extraer solo el nÃºmero del puerto (Ãºltimo dÃ­gito)
+                    # Extraer solo el número del puerto (último dígito)
                     puerto_numero = port_path.split('/')[-1]
                     
                     # Calcular porcentaje
@@ -90,15 +94,15 @@ class BoardService:
                     logger.debug(f"Puerto parseado: {puerto_info}")
                     
                 except Exception as e:
-                    logger.warning(f"Error parseando lÃ­nea {i}: {line} - {e}")
+                    logger.warning(f"Error parseando línea {i}: {line} - {e}")
                     continue
         
         logger.info(f"Total de puertos parseados: {len(puertos)}")
         
-        # Ordenar por nÃºmero de puerto
+        # Ordenar por número de puerto
         puertos.sort(key=lambda x: int(x['puerto']))
         
-        # Calcular estadÃ­sticas generales
+        # Calcular estadísticas generales
         total_puertos = len(puertos)
         puertos_online = len([p for p in puertos if p['status'] == 'online'])
         puertos_warning = len([p for p in puertos if p['status'] == 'warning'])
@@ -117,7 +121,7 @@ class BoardService:
             'total_offline': total_onts_general - total_online_general
         }
         
-        logger.info(f"EstadÃ­sticas calculadas: {estadisticas}")
+        logger.info(f"Estadísticas calculadas: {estadisticas}")
         
         return {
             'tarjeta': tarjeta,

@@ -1,35 +1,38 @@
 from typing import List, Dict
 import logging
 from models.ont_model import ONT, ONTCollection
-from services.connection_service import ConnectionService
 
 logger = logging.getLogger(__name__)
 
 class ONTService:
     """Servicio para operaciones con ONTs"""
     
-    def __init__(self, connection_service: ConnectionService):
-        self.connection_service = connection_service
+    def __init__(self, session_connection):
+        """
+        Args:
+            session_connection: Instancia de SessionConnection del pool
+        """
+        self.session_connection = session_connection
     
     def obtener_onts(self, tarjeta: str, puerto: str) -> ONTCollection:
         """Obtiene información de ONTs para un puerto específico"""
         try:
-            logger.info(f"Iniciando consulta de ONTs para tarjeta {tarjeta}, puerto {puerto}")
+            logger.info(f"Iniciando consulta de ONTs para tarjeta {tarjeta}, puerto {puerto} en sesión {self.session_connection.session_id}")
             
             # Entrar a la interfaz GPON
-            self.connection_service.enter_interface(tarjeta)
+            self.session_connection.enter_interface(tarjeta)
             
             # Ejecutar comandos en la interfaz
-            output_optical = self.connection_service.execute_command(
+            output_optical = self.session_connection.execute_command(
                 f"display ont optical-info {puerto} all"
             )
             
-            output_summary = self.connection_service.execute_command(
+            output_summary = self.session_connection.execute_command(
                 f"display ont info summary {puerto}"
             )
             
             # IMPORTANTE: Salir de la interfaz después de la consulta
-            self.connection_service.exit_interface()
+            self.session_connection.exit_interface()
             
             # Debug
             logger.debug(f"Output Summary: {output_summary}")
@@ -44,59 +47,14 @@ class ONTService:
                 ont = ONT(**ont_data)
                 collection.add_ont(ont)
             
-            logger.info(f"Se procesaron {collection.get_total_count()} ONTs. Contexto actual: {self.connection_service.get_current_context()}")
+            logger.info(f"Se procesaron {collection.get_total_count()} ONTs en sesión {self.session_connection.session_id}. Contexto actual: {self.session_connection.get_current_context()}")
             return collection
             
         except Exception as e:
-            logger.error(f"Error obteniendo ONTs para {tarjeta}/{puerto}: {e}")
+            logger.error(f"Error obteniendo ONTs para {tarjeta}/{puerto} en sesión {self.session_connection.session_id}: {e}")
             # Asegurar que salimos de la interfaz en caso de error
             try:
-                self.connection_service.exit_interface()
-            except:
-                pass
-            raise
-
-    def obtener_tarjeta(self, tarjeta: str, puerto: str) -> ONTCollection:
-        """Obtiene información de ONTs para un puerto específico"""
-        try:
-            logger.info(f"Iniciando consulta de ONTs para tarjeta {tarjeta}, puerto {puerto}")
-            
-            # Entrar a la interfaz GPON
-            self.connection_service.enter_interface(tarjeta)
-            
-            # Ejecutar comandos en la interfaz
-            output_optical = self.connection_service.execute_command(
-                f"display ont optical-info {puerto} all"
-            )
-            
-            output_summary = self.connection_service.execute_command(
-                f"display ont info summary {puerto}"
-            )
-            
-            # IMPORTANTE: Salir de la interfaz después de la consulta
-            self.connection_service.exit_interface()
-            
-            # Debug
-            logger.debug(f"Output Summary: {output_summary}")
-            logger.debug(f"Output Optical: {output_optical}")
-            
-            # Parsear datos
-            onts_data = self._parse_ont_data(output_summary, output_optical, tarjeta, puerto)
-            
-            # Crear colección
-            collection = ONTCollection()
-            for ont_data in onts_data.values():
-                ont = ONT(**ont_data)
-                collection.add_ont(ont)
-            
-            logger.info(f"Se procesaron {collection.get_total_count()} ONTs. Contexto actual: {self.connection_service.get_current_context()}")
-            return collection
-            
-        except Exception as e:
-            logger.error(f"Error obteniendo ONTs para {tarjeta}/{puerto}: {e}")
-            # Asegurar que salimos de la interfaz en caso de error
-            try:
-                self.connection_service.exit_interface()
+                self.session_connection.exit_interface()
             except:
                 pass
             raise
@@ -104,27 +62,27 @@ class ONTService:
     def obtener_autofind_onts(self) -> List[Dict[str, str]]:
         """Obtiene información de ONTs detectadas automáticamente (autofind)"""
         try:
-            logger.info("Iniciando consulta de autofind ONTs")
+            logger.info(f"Iniciando consulta de autofind ONTs en sesión {self.session_connection.session_id}")
             
             # Asegurar que estamos en modo config global antes del comando autofind
-            self.connection_service.ensure_config_mode()
+            self.session_connection.ensure_config_mode()
             
             # Ejecutar comando autofind usando el método para comandos globales
-            output_autofind = self.connection_service.execute_global_command("display ont autofind all")
+            output_autofind = self.session_connection.execute_global_command("display ont autofind all")
             
             logger.debug(f"Output Autofind: {output_autofind}")
             
             # Parsear datos
             autofind_onts = self._parse_autofind_data(output_autofind)
             
-            logger.info(f"Se encontraron {len(autofind_onts)} ONTs en autofind. Contexto actual: {self.connection_service.get_current_context()}")
+            logger.info(f"Se encontraron {len(autofind_onts)} ONTs en autofind en sesión {self.session_connection.session_id}. Contexto actual: {self.session_connection.get_current_context()}")
             return autofind_onts
             
         except Exception as e:
-            logger.error(f"Error obteniendo ONTs autofind: {e}")
+            logger.error(f"Error obteniendo ONTs autofind en sesión {self.session_connection.session_id}: {e}")
             # Asegurar modo config en caso de error
             try:
-                self.connection_service.ensure_config_mode()
+                self.session_connection.ensure_config_mode()
             except:
                 pass
             raise
@@ -312,8 +270,6 @@ class ONTService:
                         if desc_parts:
                             onts[ont_id]['descripcion'] = '_'.join(desc_parts)
 
-
-    
     def _parse_optical_data(self, output_optical: str, onts: Dict[str, dict]):
         """Parsea la información del comando optical"""
         optical_lines = output_optical.split('\n')

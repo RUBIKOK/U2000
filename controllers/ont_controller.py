@@ -5,13 +5,14 @@ import sys
 import os
 import re
 import traceback
+import uuid
 
 # Agregar el directorio raíz al path si es necesario
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 try:
     from config import Config
-    from services.connection_service import ConnectionService
+    from services.connection_pool import ConnectionPool  # Nueva importación
     from services.ont_service import ONTService
     from services.excel_service import ExcelService
     from models.ont_model import ONT, ONTCollection
@@ -27,27 +28,36 @@ logger = logging.getLogger(__name__)
 # Crear blueprint
 ont_bp = Blueprint('ont', __name__)
 
-# Inicializar servicios básicos
-connection_service = ConnectionService(Config.DEVICE_CONFIG)
-ont_service = ONTService(connection_service)
+# Inicializar pool de conexiones (ÚNICO PARA TODA LA APLICACIÓN)
+connection_pool = ConnectionPool(Config.DEVICE_CONFIG, max_idle_time=300)
 excel_service = ExcelService()
 
 # Intentar importar BoardService
 board_service = None
 try:
     from services.board_service import BoardService
-    board_service = BoardService(connection_service)
+    board_service = BoardService
     logger.info("BoardService inicializado correctamente")
 except ImportError as e:
     logger.error(f"Error importando BoardService: {e}")
 except Exception as e:
     logger.error(f"Error inicializando BoardService: {e}")
 
+def get_session_id():
+    """Obtiene o crea un ID único para la sesión actual"""
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+        logger.info(f"Nueva sesión creada: {session['session_id']}")
+    return session['session_id']
+
+def get_connection_for_session():
+    """Obtiene una conexión específica para la sesión actual"""
+    session_id = get_session_id()
+    return connection_pool.get_connection(session_id)
+
 @ont_bp.route("/")
 def home():
     """Página de inicio - NO carga automáticamente las ONTs en autofind"""
-    # Eliminamos la carga automática de autofind ONTs
-    # Solo mostramos la página vacía, los datos se cargarán al hacer clic en "Actualizar"
     return render_template("home.html", autofind_list=[])
 
 @ont_bp.route("/onts", methods=["GET", "POST"])
@@ -64,6 +74,10 @@ def ont_page():
             flash("Por favor ingrese tarjeta y puerto válidos", "error")
         else:
             try:
+                # Usar conexión específica de la sesión
+                connection_service = get_connection_for_session()
+                ont_service = ONTService(connection_service)
+                
                 ont_collection = ont_service.obtener_onts(tarjeta, puerto)
                 summary = ont_collection.get_summary()
                 session['last_onts'] = ont_collection.to_dict_list()
@@ -71,6 +85,7 @@ def ont_page():
                 flash(f"Se encontraron {ont_collection.get_total_count()} ONTs", "success")
             except Exception as e:
                 flash(f"Error al consultar ONTs: {str(e)}", "error")
+                logger.error(f"Error en sesión {get_session_id()}: {e}")
 
     return render_template(
         "ont.html",
@@ -86,25 +101,27 @@ def download_tarjeta(tarjeta):
     try:
         if not tarjeta:
             flash("Por favor ingrese una tarjeta válida", "error")
-            return redirect(url_for("ont.index"))
+            return redirect(url_for("ont.ont_page"))
+
+        # Usar conexión específica de la sesión
+        connection_service = get_connection_for_session()
+        ont_service = ONTService(connection_service)
 
         all_onts = ONTCollection()
         for p in range(16):  # puertos 0-15
             try:
                 partial = ont_service.obtener_onts(tarjeta, str(p))
-                all_onts.extend(partial)  # ⚠️ tu ONTCollection debe soportar extend
+                all_onts.extend(partial)
             except Exception as e:
-                # No detiene todo si un puerto falla, solo avisa
-                logger.warning(f"Error en puerto {p}: {e}")
+                logger.warning(f"Error en puerto {p} para sesión {get_session_id()}: {e}")
                 continue
 
         if all_onts.get_total_count() == 0:
             flash("No se encontraron ONTs en la tarjeta.", "warning")
-            return redirect(url_for("ont.index"))
+            return redirect(url_for("ont.ont_page"))
 
         # Generar archivo Excel
         file_stream = excel_service.generar_reporte(all_onts)
-
         filename = f"Reporte_Tarjeta_{tarjeta}_Puertos_0_15.xlsx"
 
         return send_file(
@@ -115,21 +132,19 @@ def download_tarjeta(tarjeta):
         )
 
     except Exception as e:
-        logger.error(f"Error generando Excel para tarjeta {tarjeta}: {e}")
+        logger.error(f"Error generando Excel para tarjeta {tarjeta} en sesión {get_session_id()}: {e}")
         flash(f"Error al generar Excel: {str(e)}", "error")
-        return redirect(url_for("ont.index"))
+        return redirect(url_for("ont.ont_page"))
 
 @ont_bp.route("/authorize_ont/<sn>")
 def authorize_ont(sn):
     """Ruta para autorizar una ONT desde autofind"""
     try:
-        # Aquí iría la lógica para autorizar la ONT
-        # Por ahora solo mostramos un mensaje
         flash(f"Funcionalidad de autorización para ONT {sn} - En desarrollo", "info")
         return redirect(url_for('ont.home'))
         
     except Exception as e:
-        logger.error(f"Error autorizando ONT {sn}: {e}")
+        logger.error(f"Error autorizando ONT {sn} en sesión {get_session_id()}: {e}")
         flash(f"Error al autorizar ONT: {str(e)}", "error")
         return redirect(url_for('ont.home'))
 
@@ -146,8 +161,6 @@ def download_excel():
         # Recrear colección desde los datos de sesión
         ont_collection = ONTCollection()
         for ont_data in last_onts_data:
-            # Crear ONT desde diccionario (necesitamos mapear algunos campos)
-            from models.ont_model import ONT
             ont = ONT(
                 id=ont_data['id'],
                 tarjeta=ont_data['tarjeta'],
@@ -178,7 +191,7 @@ def download_excel():
         )
     
     except Exception as e:
-        logger.error(f"Error generando Excel: {e}")
+        logger.error(f"Error generando Excel en sesión {get_session_id()}: {e}")
         flash(f"Error al generar el archivo Excel: {str(e)}", "error")
         return redirect(url_for('ont.ont_page'))
 
@@ -191,7 +204,7 @@ def monitor():
 def get_board_data(tarjeta):
     """API endpoint para obtener datos de una tarjeta específica"""
     try:
-        logger.info(f"=== API Request: Tarjeta {tarjeta} ===")
+        logger.info(f"=== API Request: Tarjeta {tarjeta} en sesión {get_session_id()} ===")
 
         if board_service is None:
             logger.error("BoardService no está disponible")
@@ -199,28 +212,37 @@ def get_board_data(tarjeta):
                 "error": "Servicio de tarjetas no disponible. Verifique la configuración del servidor."
             }), 500
 
-        # Validar formato de tarjeta (ejemplo: "0/2")
+        # Validar formato de tarjeta
         if not re.match(r'^(1[0-7]|[1-9])$', tarjeta):
             logger.warning(f"Formato de tarjeta inválido: {tarjeta}")
             return jsonify({
                 "error": "Formato de tarjeta inválido. Solo se permiten números entre 1 y 15"
             }), 400
 
-        board_data = board_service.obtener_puertos_tarjeta(tarjeta)
-        logger.info(f"Consulta exitosa para tarjeta {tarjeta}")
+        # Usar conexión específica de la sesión
+        connection_service = get_connection_for_session()
+        board_service_instance = BoardService(connection_service)
+        
+        board_data = board_service_instance.obtener_puertos_tarjeta(tarjeta)
+        logger.info(f"Consulta exitosa para tarjeta {tarjeta} en sesión {get_session_id()}")
         return jsonify(board_data)
 
     except Exception as e:
-        logger.error(f"Error en API /api/board/{tarjeta}: {e}")
+        logger.error(f"Error en API /api/board/{tarjeta} en sesión {get_session_id()}: {e}")
         logger.error(traceback.format_exc())
         return jsonify({"error": f"Error interno del servidor: {str(e)}"}), 500
 
 @ont_bp.route("/api/test")
 def test_api():
     """Endpoint de prueba para verificar que la API funciona"""
+    session_id = get_session_id()
+    active_connections = connection_pool.get_active_connections_count()
+    
     return jsonify({
         "status": "ok", 
         "message": "API funcionando correctamente",
+        "session_id": session_id,
+        "active_connections": active_connections,
         "board_service_available": board_service is not None
     })
 
@@ -228,9 +250,14 @@ def test_api():
 def refresh_autofind():
     """API endpoint para refrescar datos de autofind"""
     try:
-        logger.info("Iniciando consulta de autofind ONTs")
+        logger.info(f"Iniciando consulta de autofind ONTs en sesión {get_session_id()}")
+        
+        # Usar conexión específica de la sesión
+        connection_service = get_connection_for_session()
+        ont_service = ONTService(connection_service)
+        
         autofind_list = ont_service.obtener_autofind_onts()
-        logger.info(f"Se obtuvieron {len(autofind_list)} ONTs en autofind")
+        logger.info(f"Se obtuvieron {len(autofind_list)} ONTs en autofind para sesión {get_session_id()}")
         
         return jsonify({
             "status": "success",
@@ -239,16 +266,50 @@ def refresh_autofind():
             "message": f"Se encontraron {len(autofind_list)} ONUs detectadas automáticamente"
         })
     except Exception as e:
-        logger.error(f"Error refrescando autofind: {e}")
+        logger.error(f"Error refrescando autofind en sesión {get_session_id()}: {e}")
         return jsonify({
             "status": "error",
             "message": str(e)
         }), 500
 
+@ont_bp.route("/api/session/disconnect")
+def disconnect_session():
+    """Endpoint para desconectar manualmente la sesión actual"""
+    try:
+        session_id = get_session_id()
+        connection_pool.disconnect_session(session_id)
+        # Limpiar el session_id para forzar una nueva conexión
+        session.pop('session_id', None)
+        
+        return jsonify({
+            "status": "success",
+            "message": f"Sesión {session_id} desconectada correctamente"
+        })
+    except Exception as e:
+        logger.error(f"Error desconectando sesión: {e}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@ont_bp.route("/api/connections/status")
+def connections_status():
+    """Endpoint para ver el estado de las conexiones"""
+    try:
+        return jsonify({
+            "active_connections": connection_pool.get_active_connections_count(),
+            "current_session": get_session_id()
+        })
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
+
 @ont_bp.errorhandler(Exception)
 def handle_error(error):
     """Manejo global de errores"""
-    logger.error(f"Error no manejado: {error}")
+    session_id = session.get('session_id', 'unknown')
+    logger.error(f"Error no manejado en sesión {session_id}: {error}")
     logger.error(f"Traceback: {traceback.format_exc()}")
     
     # Si es una petición AJAX (API), devolver JSON

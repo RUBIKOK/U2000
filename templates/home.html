@@ -35,88 +35,116 @@
                     <div>
                         <h2 class="mb-1 fw-bold">Panel de Administración OLT</h2>
                         <p class="text-muted mb-0">Sistema de monitoreo y gestión de terminales ópticas</p>
+                        <small class="text-muted">ID Sesión: <code id="sessionId">Cargando...</code></small>
                     </div>
                 </div>
                 <div class="text-end">
-                    <div class="d-flex align-items-center text-muted">
+                    <div class="d-flex align-items-center text-muted mb-2">
                         <i class="fas fa-clock me-2"></i>
                         <span id="currentTime"></span>
                     </div>
-                    <small class="text-success">
+                    <div class="d-flex align-items-center text-success mb-1">
                         <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>
-                        Sistema activo
+                        <span>Sistema activo</span>
+                    </div>
+                    <small class="text-info">
+                        <i class="fas fa-plug me-1"></i>
+                        <span id="connectionsCount">0</span> conexiones activas
                     </small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ONUs detectadas (autofind) -->
-    <div class="mt-5 p-4 bg-light bg-opacity-10 rounded shadow">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4><i class="fas fa-search text-primary"></i> ONUs detectadas</h4>
-            <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshAutofind()" id="refreshBtn">
-                <i class="fas fa-sync-alt"></i> Actualizar
-            </button>
+    <!-- Panel de gestión de conexiones -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <!-- ONUs detectadas (autofind) -->
+            <div class="p-4 bg-light bg-opacity-10 rounded shadow">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4><i class="fas fa-search text-primary"></i> ONUs detectadas</h4>
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshAutofind()" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+                
+                <!-- Contador de resultados -->
+                <div id="resultsCounter" class="mb-3" style="display: none;">
+                    <span class="badge bg-info" id="counterBadge">0 ONUs detectadas</span>
+                </div>
+                
+                <div class="results-table">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0" id="autofindTable">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Tipo</th>
+                                    <th>Board</th>
+                                    <th>Port</th>
+                                    <th>SN</th>
+                                    <th>Type</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="autofindTableBody">
+                                <!-- Mensaje inicial -->
+                                <tr id="initialMessage">
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                        <br>Haga clic en "Actualizar" para buscar ONUs detectadas
+                                        <br>
+                                        <small>Las ONUs aparecerán aquí cuando se conecten sin autorizar</small>
+                                    </td>
+                                </tr>
+                                <!-- Las filas se cargarán dinámicamente aquí -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <!-- Contador de resultados -->
-        <div id="resultsCounter" class="mb-3" style="display: none;">
-            <span class="badge bg-info" id="counterBadge">0 ONUs detectadas</span>
-        </div>
-        
-        <div class="results-table">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0" id="autofindTable">
-                    <thead class="table-primary">
-                        <tr>
-                            <th>Número</th>
-                            <th>Tipo</th>
-                            <th>Board</th>
-                            <th>Port</th>
-                            <th>SN</th>
-                            <th>Type</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody id="autofindTableBody">
-                        <!-- Mensaje inicial -->
-                        <tr id="initialMessage">
-                            <td colspan="7" class="text-center text-muted py-4">
-                                <i class="fas fa-info-circle fa-2x mb-2"></i>
-                                <br>Haga clic en "Actualizar" para buscar ONUs detectadas
-                                <br>
-                                <small>Las ONUs aparecerán aquí cuando se conecten sin autorizar</small>
-                            </td>
-                        </tr>
-                        <!-- Las filas se cargarán dinámicamente aquí -->
-                    </tbody>
-                </table>
+
+        <div class="col-md-4">
+            <!-- Panel de control de sesión -->
+            <div class="p-4 bg-light bg-opacity-10 rounded shadow mb-4">
+                <h5><i class="fas fa-user-cog text-primary"></i> Control de Sesión</h5>
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Estado de conexión:</span>
+                        <span class="badge bg-success" id="connectionStatus">Activa</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>Conexiones totales:</span>
+                        <span class="badge bg-info" id="totalConnections">0</span>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-warning btn-sm" onclick="disconnectSession()">
+                            <i class="fas fa-unlink"></i> Desconectar mi sesión
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" onclick="refreshConnectionStatus()">
+                            <i class="fas fa-sync-alt"></i> Actualizar estado
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información del sistema -->
+            <div class="p-4 bg-light bg-opacity-10 rounded shadow">
+                <h5><i class="fas fa-info-circle text-primary"></i> Información del sistema</h5>
+                <div class="mt-3">
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-server text-secondary me-2"></i> Modelo OLT: Huawei MA5800-X15</li>
+                        <li><i class="fas fa-code-branch text-secondary me-2"></i> Versión del sistema: 1.2.0</li>
+                        <li><i class="fas fa-clock text-secondary me-2"></i> Última actualización: <span id="lastUpdate">-</span></li>
+                        <li><i class="fas fa-network-wired text-secondary me-2"></i> ONUs en autofind: <span class="badge bg-info" id="onusCount">-</span></li>
+                        <li><i class="fas fa-eye text-secondary me-2"></i> Estado: <span class="badge bg-success">Monitoreando</span></li>
+                        <li><i class="fas fa-wifi text-secondary me-2"></i> Conexión: <span class="badge bg-success">Activa</span></li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
-
-    <!-- Información adicional -->
-    <div class="mt-5 p-4 bg-light bg-opacity-10 rounded shadow">
-        <h4><i class="fas fa-info-circle text-primary"></i> Información del sistema</h4>
-        <div class="row mt-3">
-            <div class="col-md-6">
-                <ul class="list-unstyled">
-                    <li><i class="fas fa-server text-secondary me-2"></i> Modelo OLT: Huawei MA5800-X15</li>
-                    <li><i class="fas fa-code-branch text-secondary me-2"></i> Versión del sistema: 1.0.0</li>
-                    <li><i class="fas fa-clock text-secondary me-2"></i> Última actualización: <span id="lastUpdate">-</span></li>
-                </ul>
-            </div>
-            <div class="col-md-6">
-                <ul class="list-unstyled">
-                    <li><i class="fas fa-network-wired text-secondary me-2"></i> ONUs en autofind: <span class="badge bg-info" id="onusCount">-</span></li>
-                    <li><i class="fas fa-eye text-secondary me-2"></i> Estado: <span class="badge bg-success">Monitoreando</span></li>
-                    <li><i class="fas fa-wifi text-secondary me-2"></i> Conexión: <span class="badge bg-success">Activa</span></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
 </div>
 
 <!-- Loading overlay para autofind -->
@@ -131,6 +159,16 @@
 <!-- JavaScript para funcionalidad adicional -->
 <script>
     let isRefreshing = false;
+    
+    // Cargar estado inicial
+    document.addEventListener('DOMContentLoaded', function() {
+        refreshConnectionStatus();
+        updateClock();
+        setInterval(updateClock, 1000);
+        
+        // Actualizar estado de conexiones cada 30 segundos
+        setInterval(refreshConnectionStatus, 30000);
+    });
     
     function refreshAutofind() {
         if (isRefreshing) {
@@ -189,6 +227,40 @@
             });
     }
     
+    function refreshConnectionStatus() {
+        fetch('/api/connections/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.active_connections !== undefined) {
+                    document.getElementById('connectionsCount').textContent = data.active_connections;
+                    document.getElementById('totalConnections').textContent = data.active_connections;
+                    document.getElementById('sessionId').textContent = data.current_session || 'Desconocido';
+                }
+            })
+            .catch(error => {
+                console.error('Error al obtener estado de conexiones:', error);
+            });
+    }
+    
+    function disconnectSession() {
+        if (confirm('¿Está seguro de que desea desconectar su sesión? Esto cerrará su conexión SSH al OLT.')) {
+            fetch('/api/session/disconnect')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showToast('success', 'Sesión desconectada correctamente');
+                        refreshConnectionStatus();
+                    } else {
+                        showToast('error', 'Error al desconectar sesión: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('error', 'Error al desconectar sesión');
+                });
+        }
+    }
+    
     function updateAutofindTable(autofindList, count) {
         const tableBody = document.getElementById('autofindTableBody');
         const resultsCounter = document.getElementById('resultsCounter');
@@ -237,6 +309,13 @@
                 tableBody.innerHTML += row;
             });
         }
+        
+        // Actualizar contadores
+        counterBadge.textContent = `${count} ONUs detectadas`;
+        onusCount.textContent = count;
+        
+        // Mostrar contador si hay resultados
+        resultsCounter.style.display = count > 0 ? 'block' : 'none';
     }
     
     function updateLastUpdateTime() {
@@ -295,11 +374,6 @@
             clockElement.textContent = timeString;
         }
     }
-    
-    // Inicializar reloj
-    updateClock();
-    setInterval(updateClock, 1000);
-    
 </script>
 
 {% endblock %}
