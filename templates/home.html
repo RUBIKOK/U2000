@@ -1,3 +1,4 @@
+<!-- templates/home.html - VERSIÓN CORREGIDA -->
 {% extends "index.html" %}
 
 {% block status %}active{% endblock %}
@@ -10,11 +11,11 @@
     {% if messages %}
     <div class="position-fixed top-0 end-0 p-3" style="z-index: 11000;">
         {% for category, message in messages %}
-        <div class="toast show" role="alert">
+        <div class="toast show" role="alert" data-bs-autohide="true" data-bs-delay="8000">
             <div class="toast-header">
-                <i
-                    class="fas {% if category == 'error' %}fa-exclamation-triangle text-danger{% elif category == 'success' %}fa-check-circle text-success{% elif category == 'warning' %}fa-exclamation-circle text-warning{% else %}fa-info-circle text-info{% endif %} me-2"></i>
+                <i class="fas {% if category == 'error' %}fa-exclamation-triangle text-danger{% elif category == 'success' %}fa-check-circle text-success{% elif category == 'warning' %}fa-exclamation-circle text-warning{% else %}fa-info-circle text-info{% endif %} me-2"></i>
                 <strong class="me-auto">{{ category.title() }}</strong>
+                <small class="text-muted">ahora</small>
                 <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
             </div>
             <div class="toast-body">{{ message }}</div>
@@ -35,7 +36,10 @@
                     <div>
                         <h2 class="mb-1 fw-bold">Panel de Administración OLT</h2>
                         <p class="text-muted mb-0">Sistema de monitoreo y gestión de terminales ópticas</p>
-                        <small class="text-muted">ID Sesión: <code id="sessionId">Cargando...</code></small>
+                        <small class="text-muted">
+                            ID Sesión: <code id="sessionId">Cargando...</code> | 
+                            Estado: <span class="badge bg-success" id="connectionStatus">Activa</span>
+                        </small>
                     </div>
                 </div>
                 <div class="text-end">
@@ -43,9 +47,9 @@
                         <i class="fas fa-clock me-2"></i>
                         <span id="currentTime"></span>
                     </div>
-                    <div class="d-flex align-items-center text-success mb-1">
-                        <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>
-                        <span>Sistema activo</span>
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="fas fa-circle me-1 text-success" style="font-size: 0.5rem;" id="systemStatusIcon"></i>
+                        <span id="systemStatusText">Sistema activo</span>
                     </div>
                     <small class="text-info">
                         <i class="fas fa-plug me-1"></i>
@@ -57,20 +61,37 @@
     </div>
 
     <!-- Panel de gestión de conexiones -->
-    <div class="row mb-4">
-        <div class="col-md-8">
+    <div class="row mb-5">
+        <div class="col-12">
             <!-- ONUs detectadas (autofind) -->
             <div class="p-4 bg-light bg-opacity-10 rounded shadow">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4><i class="fas fa-search text-primary"></i> ONUs detectadas</h4>
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshAutofind()" id="refreshBtn">
-                        <i class="fas fa-sync-alt"></i> Actualizar
-                    </button>
+                    <div>
+                        <!-- CORRECCIÓN 1: Indicador de carga en el botón -->
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshAutofind()" id="refreshBtn">
+                            <span class="btn-content">
+                                <i class="fas fa-sync-alt" id="refreshIcon"></i> 
+                                <span id="refreshText">Actualizar</span>
+                            </span>
+                        </button>
+                        <!-- CORRECCIÓN 2: Botón de ayuda -->
+                        <button type="button" class="btn btn-outline-info btn-sm ms-1" data-bs-toggle="tooltip" 
+                                title="Las ONUs detectadas aparecen cuando se conectan dispositivos sin autorizar al OLT">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                    </div>
                 </div>
                 
-                <!-- Contador de resultados -->
+                <!-- Contador de resultados mejorado -->
                 <div id="resultsCounter" class="mb-3" style="display: none;">
-                    <span class="badge bg-info" id="counterBadge">0 ONUs detectadas</span>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="badge bg-info" id="counterBadge">0 ONUs detectadas</span>
+                        <!-- CORRECCIÓN 3: Información adicional -->
+                        <small class="text-muted">
+                            Última actualización: <span id="lastUpdateTime">Nunca</span>
+                        </small>
+                    </div>
                 </div>
                 
                 <div class="results-table">
@@ -78,153 +99,349 @@
                         <table class="table table-hover table-striped mb-0" id="autofindTable">
                             <thead class="table-primary">
                                 <tr>
-                                    <th>Número</th>
-                                    <th>Tipo</th>
-                                    <th>Board</th>
-                                    <th>Port</th>
-                                    <th>SN</th>
-                                    <th>Type</th>
-                                    <th>Acción</th>
+                                    <th style="min-width: 80px;">Número</th>
+                                    <th style="min-width: 80px;">Tipo PON</th>
+                                    <th style="min-width: 80px;">Board</th>
+                                    <th style="min-width: 70px;">Port</th>
+                                    <th style="min-width: 150px;">Serial Number</th>
+                                    <th style="min-width: 120px;">Equipo</th>
+                                    <th style="min-width: 100px;">Acción</th>
                                 </tr>
                             </thead>
                             <tbody id="autofindTableBody">
-                                <!-- Mensaje inicial -->
+                                <!-- Mensaje inicial mejorado -->
                                 <tr id="initialMessage">
-                                    <td colspan="7" class="text-center text-muted py-4">
-                                        <i class="fas fa-info-circle fa-2x mb-2"></i>
-                                        <br>Haga clic en "Actualizar" para buscar ONUs detectadas
-                                        <br>
-                                        <small>Las ONUs aparecerán aquí cuando se conecten sin autorizar</small>
+                                    <td colspan="7" class="text-center text-muted py-5">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <i class="fas fa-info-circle fa-3x mb-3 text-primary opacity-50"></i>
+                                            <h5 class="mb-2">Buscar ONUs detectadas</h5>
+                                            <p class="mb-3">Haga clic en "Actualizar" para buscar dispositivos detectados automáticamente</p>
+                                            <small class="text-muted">
+                                                Las ONUs aparecen aquí cuando se conectan sin autorización previa
+                                            </small>
+                                        </div>
                                     </td>
                                 </tr>
-                                <!-- Las filas se cargarán dinámicamente aquí -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="col-md-4">
-            <!-- Panel de control de sesión -->
+    </div>
+    <div class="row mb-5">
+        <div class="col-md-8">
+            <!-- Panel de control de sesión mejorado -->
             <div class="p-4 bg-light bg-opacity-10 rounded shadow mb-4">
                 <h5><i class="fas fa-user-cog text-primary"></i> Control de Sesión</h5>
                 <div class="mt-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Estado de conexión:</span>
-                        <span class="badge bg-success" id="connectionStatus">Activa</span>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="text-center p-2 bg-success bg-opacity-10 rounded">
+                                <div class="fw-bold text-success" id="totalConnections">0</div>
+                                <small class="text-muted">Conexiones</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-2 bg-info bg-opacity-10 rounded">
+                                <div class="fw-bold text-info" id="sessionUptime">00:00</div>
+                                <small class="text-muted">Tiempo activo</small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span>Conexiones totales:</span>
-                        <span class="badge bg-info" id="totalConnections">0</span>
-                    </div>
+                    
+                    <!-- CORRECCIÓN 4: Botones mejorados -->
                     <div class="d-grid gap-2">
-                        <button class="btn btn-outline-warning btn-sm" onclick="disconnectSession()">
+                        <button class="btn btn-outline-warning btn-sm" onclick="disconnectSession()" 
+                                data-bs-toggle="tooltip" title="Cierra su conexión SSH actual al OLT">
                             <i class="fas fa-unlink"></i> Desconectar mi sesión
                         </button>
-                        <button class="btn btn-outline-info btn-sm" onclick="refreshConnectionStatus()">
+                        <button class="btn btn-outline-info btn-sm" onclick="refreshConnectionStatus()"
+                                data-bs-toggle="tooltip" title="Actualiza el estado de las conexiones">
                             <i class="fas fa-sync-alt"></i> Actualizar estado
+                        </button>
+                        <!-- CORRECCIÓN 5: Botón de prueba de conexión -->
+                        <button class="btn btn-outline-secondary btn-sm" onclick="testConnection()"
+                                data-bs-toggle="tooltip" title="Prueba la conectividad con el OLT">
+                            <i class="fas fa-heartbeat"></i> Test conexión
                         </button>
                     </div>
                 </div>
-            </div>
-
-            <!-- Información del sistema -->
+            </div>            
+        </div>
+        <div class="col-md-4">
+            <!-- Información del sistema mejorada -->
             <div class="p-4 bg-light bg-opacity-10 rounded shadow">
                 <h5><i class="fas fa-info-circle text-primary"></i> Información del sistema</h5>
                 <div class="mt-3">
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-server text-secondary me-2"></i> Modelo OLT: Huawei MA5800-X15</li>
-                        <li><i class="fas fa-code-branch text-secondary me-2"></i> Versión del sistema: 1.2.0</li>
-                        <li><i class="fas fa-clock text-secondary me-2"></i> Última actualización: <span id="lastUpdate">-</span></li>
-                        <li><i class="fas fa-network-wired text-secondary me-2"></i> ONUs en autofind: <span class="badge bg-info" id="onusCount">-</span></li>
-                        <li><i class="fas fa-eye text-secondary me-2"></i> Estado: <span class="badge bg-success">Monitoreando</span></li>
-                        <li><i class="fas fa-wifi text-secondary me-2"></i> Conexión: <span class="badge bg-success">Activa</span></li>
-                    </ul>
+                    <!-- CORRECCIÓN 6: Layout mejorado -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center py-1">
+                                <span><i class="fas fa-server text-secondary me-2"></i>Modelo OLT</span>
+                                <span class="badge bg-secondary">Huawei MA5800-X15</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center py-1">
+                                <span><i class="fas fa-code-branch text-secondary me-2"></i>Versión</span>
+                                <span class="badge bg-primary">{{ config['APP_VERSION'] if config else '1.2.0' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center py-1">
+                                <span><i class="fas fa-clock text-secondary me-2"></i>Última actualización</span>
+                                <span class="text-muted" id="lastUpdate">-</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center py-1">
+                                <span><i class="fas fa-network-wired text-secondary me-2"></i>ONUs detectadas</span>
+                                <span class="badge bg-info" id="onusCount">-</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center py-1">
+                                <span><i class="fas fa-eye text-secondary me-2"></i>Estado monitoreo</span>
+                                <span class="badge bg-success" id="monitoringStatus">Activo</span>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center py-1">
+                                <span><i class="fas fa-wifi text-secondary me-2"></i>Conectividad</span>
+                                <span class="badge bg-success" id="connectivityStatus">Activa</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- CORRECCIÓN 7: Información adicional colapsible -->
+                    <div class="accordion accordion-flush" id="systemDetailsAccordion">
+                        <div class="accordion-item">
+                            <h6 class="accordion-header">
+                                <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" 
+                                        data-bs-target="#systemDetails" aria-expanded="false">
+                                    <small><i class="fas fa-chart-line me-2"></i>Estadísticas del sistema</small>
+                                </button>
+                            </h6>
+                            <div id="systemDetails" class="accordion-collapse collapse" data-bs-parent="#systemDetailsAccordion">
+                                <div class="accordion-body py-2">
+                                    <small>
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span>Consultas realizadas:</span>
+                                            <span id="totalQueries">0</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span>Tiempo promedio:</span>
+                                            <span id="avgResponseTime">0ms</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Disponibilidad:</span>
+                                            <span id="systemUptime">100%</span>
+                                        </div>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Loading overlay para autofind -->
+<!-- Loading overlay mejorado -->
 <div class="loading-overlay" id="loadingOverlay" style="display: none;">
-    <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;" role="status">
-        <span class="visually-hidden">Cargando...</span>
+    <div class="text-center">
+        <div class="spinner-border text-primary mb-3" style="width: 4rem; height: 4rem;" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <h4 class="text-primary mb-2">Consultando ONUs detectadas...</h4>
+        <p class="text-muted mb-3">Esta operación puede tardar unos momentos</p>
+        <!-- CORRECCIÓN 8: Indicador de progreso -->
+        <div class="progress mb-2" style="height: 6px; width: 300px; margin: 0 auto;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                 style="width: 0%" id="loadingProgress"></div>
+        </div>
+        <small class="text-muted" id="loadingStatus">Iniciando consulta...</small>
     </div>
-    <h4 class="mt-3 text-primary">Consultando ONUs detectadas...</h4>
-    <p class="text-muted">Por favor espere, esto puede tomar unos momentos</p>
 </div>
 
-<!-- JavaScript para funcionalidad adicional -->
 <script>
+    // CORRECCIÓN 9: Variables globales mejoradas
     let isRefreshing = false;
+    let refreshTimeout = null;
+    let sessionStartTime = new Date();
+    let statisticsData = {
+        totalQueries: 0,
+        avgResponseTime: 0,
+        lastResponseTime: 0
+    };
     
     // Cargar estado inicial
     document.addEventListener('DOMContentLoaded', function() {
+        initializeTooltips();
         refreshConnectionStatus();
         updateClock();
         setInterval(updateClock, 1000);
+        setInterval(updateSessionUptime, 1000);
         
         // Actualizar estado de conexiones cada 30 segundos
         setInterval(refreshConnectionStatus, 30000);
+        
+        // Auto-refresh de autofind cada 5 minutos (opcional)
+        // setInterval(() => { if (!isRefreshing) refreshAutofind(); }, 300000);
     });
     
+    // CORRECCIÓN 10: Inicialización de tooltips
+    function initializeTooltips() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+    
+    // CORRECCIÓN 11: Función de actualización mejorada
     function refreshAutofind() {
         if (isRefreshing) {
-            return; // Evitar múltiples peticiones simultáneas
+            showToast('warning', 'Ya hay una consulta en progreso. Por favor espere.');
+            return;
         }
         
         const button = document.getElementById('refreshBtn');
-        const icon = button.querySelector('i');
+        const icon = document.getElementById('refreshIcon');
+        const text = document.getElementById('refreshText');
         const overlay = document.getElementById('loadingOverlay');
+        const progressBar = document.getElementById('loadingProgress');
+        const statusText = document.getElementById('loadingStatus');
         
         // Marcar como en proceso
         isRefreshing = true;
+        const startTime = performance.now();
         
-        // Cambiar icono y deshabilitar botón
+        // Cambiar UI
         icon.className = 'fas fa-spinner fa-spin';
+        text.textContent = 'Consultando...';
         button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...';
         
-        // Mostrar overlay
+        // Mostrar overlay con progreso simulado
         overlay.style.display = 'flex';
+        simulateProgress(progressBar, statusText);
         
-        // Realizar petición AJAX
-        fetch('/api/autofind/refresh')
+        // Realizar petición AJAX con timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos timeout
+        
+        fetch('/api/autofind/refresh', {
+            signal: controller.signal,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        })
             .then(response => {
+                clearTimeout(timeoutId);
+                
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 return response.json();
             })
             .then(data => {
+                const responseTime = performance.now() - startTime;
+                updateStatistics(responseTime);
+                
                 if (data.status === 'success') {
                     updateAutofindTable(data.data, data.count);
                     showToast('success', data.message || `Se encontraron ${data.count} ONUs`);
                     updateLastUpdateTime();
+                    
+                    // Actualizar estadísticas en la interfaz
+                    document.getElementById('onusCount').textContent = data.count;
                 } else {
                     throw new Error(data.message || 'Error desconocido');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('error', 'Error al actualizar datos: ' + error.message);
-                // En caso de error, mostrar mensaje vacío
+                let errorMessage = 'Error al actualizar datos: ';
+                
+                if (error.name === 'AbortError') {
+                    errorMessage += 'La consulta tardó demasiado tiempo. Intente nuevamente.';
+                } else if (error.message.includes('fetch')) {
+                    errorMessage += 'Error de conectividad. Verifique su conexión.';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                showToast('error', errorMessage);
                 updateAutofindTable([], 0);
+                document.getElementById('connectivityStatus').className = 'badge bg-danger';
+                document.getElementById('connectivityStatus').textContent = 'Error';
             })
             .finally(() => {
-                // Restaurar icono y habilitar botón
+                // Restaurar UI
                 icon.className = 'fas fa-sync-alt';
+                text.textContent = 'Actualizar';
                 button.disabled = false;
-                button.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar';
-                
-                // Ocultar overlay
                 overlay.style.display = 'none';
+                
+                // Reset progress
+                progressBar.style.width = '0%';
                 
                 // Permitir nuevas peticiones
                 isRefreshing = false;
             });
+    }
+    
+    // CORRECCIÓN 12: Simulación de progreso
+    function simulateProgress(progressBar, statusText) {
+        let progress = 0;
+        const stages = [
+            { progress: 20, text: 'Conectando al OLT...' },
+            { progress: 40, text: 'Ejecutando comando autofind...' },
+            { progress: 60, text: 'Procesando respuesta...' },
+            { progress: 80, text: 'Parseando datos...' },
+            { progress: 95, text: 'Finalizando...' }
+        ];
+        
+        let currentStage = 0;
+        
+        const interval = setInterval(() => {
+            if (currentStage < stages.length && !isRefreshing) {
+                clearInterval(interval);
+                return;
+            }
+            
+            if (currentStage < stages.length) {
+                const stage = stages[currentStage];
+                progressBar.style.width = stage.progress + '%';
+                statusText.textContent = stage.text;
+                currentStage++;
+            } else {
+                progressBar.style.width = '100%';
+                statusText.textContent = 'Completando...';
+                clearInterval(interval);
+            }
+        }, 1000);
+    }
+    
+    // CORRECCIÓN 13: Actualización de estadísticas
+    function updateStatistics(responseTime) {
+        statisticsData.totalQueries++;
+        statisticsData.lastResponseTime = Math.round(responseTime);
+        
+        // Calcular promedio móvil simple
+        if (statisticsData.avgResponseTime === 0) {
+            statisticsData.avgResponseTime = statisticsData.lastResponseTime;
+        } else {
+            statisticsData.avgResponseTime = Math.round(
+                (statisticsData.avgResponseTime * 0.8) + (statisticsData.lastResponseTime * 0.2)
+            );
+        }
+        
+        // Actualizar UI
+        document.getElementById('totalQueries').textContent = statisticsData.totalQueries;
+        document.getElementById('avgResponseTime').textContent = statisticsData.avgResponseTime + 'ms';
     }
     
     function refreshConnectionStatus() {
@@ -235,21 +452,64 @@
                     document.getElementById('connectionsCount').textContent = data.active_connections;
                     document.getElementById('totalConnections').textContent = data.active_connections;
                     document.getElementById('sessionId').textContent = data.current_session || 'Desconocido';
+                    
+                    // Actualizar estado visual
+                    const statusIcon = document.getElementById('systemStatusIcon');
+                    const statusText = document.getElementById('systemStatusText');
+                    const connectivityStatus = document.getElementById('connectivityStatus');
+                    
+                    if (data.active_connections > 0) {
+                        statusIcon.className = 'fas fa-circle me-1 text-success';
+                        statusText.textContent = 'Sistema activo';
+                        connectivityStatus.className = 'badge bg-success';
+                        connectivityStatus.textContent = 'Activa';
+                    } else {
+                        statusIcon.className = 'fas fa-circle me-1 text-warning';
+                        statusText.textContent = 'Sin conexiones';
+                        connectivityStatus.className = 'badge bg-warning';
+                        connectivityStatus.textContent = 'Inactiva';
+                    }
                 }
             })
             .catch(error => {
                 console.error('Error al obtener estado de conexiones:', error);
+                document.getElementById('connectivityStatus').className = 'badge bg-danger';
+                document.getElementById('connectivityStatus').textContent = 'Error';
+            });
+    }
+    
+    // CORRECCIÓN 14: Nueva función de test de conexión
+    function testConnection() {
+        fetch('/api/test')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    showToast('success', 'Conexión al OLT funcionando correctamente');
+                    document.getElementById('connectivityStatus').className = 'badge bg-success';
+                    document.getElementById('connectivityStatus').textContent = 'Activa';
+                } else {
+                    showToast('warning', 'Conexión con problemas: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('error', 'Error al probar la conexión');
+                document.getElementById('connectivityStatus').className = 'badge bg-danger';
+                document.getElementById('connectivityStatus').textContent = 'Error';
             });
     }
     
     function disconnectSession() {
-        if (confirm('¿Está seguro de que desea desconectar su sesión? Esto cerrará su conexión SSH al OLT.')) {
+        if (confirm('¿Está seguro de que desea desconectar su sesión?\n\nEsto cerrará su conexión SSH al OLT y puede afectar otras operaciones en curso.')) {
             fetch('/api/session/disconnect')
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
                         showToast('success', 'Sesión desconectada correctamente');
                         refreshConnectionStatus();
+                        
+                        // Reset session start time
+                        sessionStartTime = new Date();
                     } else {
                         showToast('error', 'Error al desconectar sesión: ' + data.message);
                     }
@@ -258,6 +518,20 @@
                     console.error('Error:', error);
                     showToast('error', 'Error al desconectar sesión');
                 });
+        }
+    }
+    
+    // CORRECCIÓN 15: Función de actualización de tiempo de sesión
+    function updateSessionUptime() {
+        const now = new Date();
+        const diff = now - sessionStartTime;
+        const minutes = Math.floor(diff / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        
+        const uptime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        const uptimeElement = document.getElementById('sessionUptime');
+        if (uptimeElement) {
+            uptimeElement.textContent = uptime;
         }
     }
     
@@ -271,43 +545,57 @@
         tableBody.innerHTML = '';
         
         if (autofindList.length === 0) {
-            // Mostrar mensaje vacío
+            // Mensaje vacío mejorado
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
-                        <i class="fas fa-search fa-2x mb-2"></i>
-                        <br>No hay ONUs detectadas en este momento
-                        <br>
-                        <small>Las ONUs aparecerán aquí cuando se conecten sin autorizar</small>
+                    <td colspan="7" class="text-center text-muted py-5">
+                        <div class="d-flex flex-column align-items-center">
+                            <i class="fas fa-search fa-3x mb-3 text-secondary opacity-50"></i>
+                            <h5 class="mb-2">No se encontraron ONUs</h5>
+                            <p class="mb-2">No hay dispositivos detectados en este momento</p>
+                            <small class="text-muted">
+                                Los dispositivos aparecerán aquí cuando se conecten sin autorización
+                            </small>
+                        </div>
                     </td>
                 </tr>
             `;
         } else {
-            // Agregar filas de datos
-            autofindList.forEach(onu => {
+            // Agregar filas de datos con mejor formato
+            autofindList.forEach((onu, index) => {
                 const row = `
-                    <tr>
-                        <td>${onu.number || '-'}</td>
+                    <tr class="table-row-hover">
+                        <td><span class="badge bg-secondary">${onu.number || '-'}</span></td>
                         <td>
-                            <span class="badge bg-info">${onu.pon_type || 'GPON'}</span>
+                            <span class="badge ${onu.pon_type === 'GPON' ? 'bg-info' : onu.pon_type === 'XG-PON' ? 'bg-primary' : 'bg-success'}">
+                                ${onu.pon_type || 'GPON'}
+                            </span>
                         </td>
-                        <td>${onu.board || '-'}</td>
-                        <td>${onu.port || '-'}</td>
-                        <td><code>${onu.sn || '-'}</code></td>
+                        <td><strong>${onu.board || '-'}</strong></td>
+                        <td><strong>${onu.port || '-'}</strong></td>
                         <td>
-                            <span class="badge bg-secondary">${onu.type || 'Unknown'}</span>
+                            <code class="small">${onu.sn || '-'}</code>
+                            ${onu.vendor_id && onu.vendor_id !== 'Unknown' ? 
+                                `<br><small class="text-muted">${onu.vendor_id}</small>` : ''}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary small">${(onu.type || 'Unknown').substring(0, 15)}</span>
                         </td>
                         <td>
                             <a href="/authorize_ont/${onu.sn || ''}" 
-                               class="btn btn-sm btn-outline-success"
+                               class="btn btn-sm btn-outline-success" 
+                               data-bs-toggle="tooltip"
                                title="Autorizar ONT ${onu.sn || ''}">
-                                <i class="fas fa-check"></i> Autorizar
+                                <i class="fas fa-check"></i> <span class="d-none d-lg-inline">Autorizar</span>
                             </a>
                         </td>
                     </tr>
                 `;
                 tableBody.innerHTML += row;
             });
+            
+            // Reinicializar tooltips para las nuevas filas
+            initializeTooltips();
         }
         
         // Actualizar contadores
@@ -315,29 +603,40 @@
         onusCount.textContent = count;
         
         // Mostrar contador si hay resultados
-        resultsCounter.style.display = count > 0 ? 'block' : 'none';
+        resultsCounter.style.display = count >= 0 ? 'block' : 'none';
     }
     
     function updateLastUpdateTime() {
         const now = new Date();
-        const timeString = now.toLocaleString('es-ES');
+        const timeString = now.toLocaleString('es-ES', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        
         document.getElementById('lastUpdate').textContent = timeString;
+        document.getElementById('lastUpdateTime').textContent = timeString;
     }
     
-    function showToast(type, message) {
-        // Crear toast dinámicamente
+    // CORRECCIÓN 16: Función de toast mejorada
+    function showToast(type, message, duration = 8000) {
         const toastContainer = document.querySelector('.position-fixed.top-0.end-0') || createToastContainer();
         
         const toastId = 'toast-' + Date.now();
         const iconClass = type === 'error' ? 'fa-exclamation-triangle text-danger' : 
                          type === 'success' ? 'fa-check-circle text-success' : 
+                         type === 'warning' ? 'fa-exclamation-circle text-warning' :
                          'fa-info-circle text-info';
         
         const toastHTML = `
-            <div class="toast show" role="alert" id="${toastId}">
+            <div class="toast show" role="alert" id="${toastId}" data-bs-autohide="true" data-bs-delay="${duration}">
                 <div class="toast-header">
                     <i class="fas ${iconClass} me-2"></i>
                     <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+                    <small class="text-muted">ahora</small>
                     <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
                 </div>
                 <div class="toast-body">${message}</div>
@@ -346,15 +645,21 @@
         
         toastContainer.insertAdjacentHTML('beforeend', toastHTML);
         
-        // Auto-hide después de 5 segundos
+        // Inicializar el toast de Bootstrap
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement);
+        
+        // Auto-hide y limpieza
         setTimeout(() => {
-            const toastElement = document.getElementById(toastId);
-            if (toastElement) {
-                const toast = new bootstrap.Toast(toastElement);
+            if (toastElement && toastElement.parentNode) {
                 toast.hide();
-                setTimeout(() => toastElement.remove(), 500);
+                setTimeout(() => {
+                    if (toastElement && toastElement.parentNode) {
+                        toastElement.remove();
+                    }
+                }, 500);
             }
-        }, 5000);
+        }, duration);
     }
     
     function createToastContainer() {
